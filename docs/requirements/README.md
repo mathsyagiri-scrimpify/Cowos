@@ -2,6 +2,8 @@
 
 Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.1 (2026-10-30).
 
+New to this work? Read the [handoff notes](../HANDOFF.md) first for current status and next steps.
+
 **Start with [00-start-here.md](00-start-here.md).** It lists the clarifying questions, the assumptions used, and 12 recommended changes to the original brief that the rest of the pack depends on.
 
 | # | Document |
