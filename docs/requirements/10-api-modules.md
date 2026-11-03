@@ -1,6 +1,6 @@
 # 10 · API Module List
 
-> Cowos requirements pack · v0.1 draft · Modules and key endpoints only; full OpenAPI specs come during design.
+> Cowos requirements pack · v0.2 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked; "P1-B" is the Billing release.
 
 ## 1. Conventions
 
@@ -10,12 +10,16 @@
 | Customer account | `/api/v1/me/...` | Host | Customer token |
 | Tenant admin | `/api/v1/admin/...` | Token claim (`tid`) | Tenant user session (BFF cookie) |
 | Platform (Super Admin) | `/api/v1/platform/...` | Explicit `{tenantId}` in path | SSPL SSO session |
+| Marketing site (`cowos.in`) | `/api/v1/marketing/...` | n/a (platform data, no tenant) | Anonymous, rate-limited |
 | Webhooks | `/webhooks/{provider}/...` | Resolved from provider account | Provider signature |
-| Internal (renderer, edge sync) | `/internal/...` | n/a | IAM / private network only |
+| Internal (renderer) | `/internal/...` | n/a | IAM / private network only |
 
 - JSON, camelCase; errors as RFC 9457 problem details; cursor pagination (`?cursor=&limit=`).
-- `Idempotency-Key` header required on POSTs that create holds, bookings, payments, refunds, invoices.
+- `Idempotency-Key` header required on POSTs that create holds, bookings, payments, refunds, invoices and pilot tenants.
 - Optimistic concurrency with `If-Match` / ETag on drafts and configuration resources.
+- Tenant state guard (Q1): until the Billing release, any request that would move a tenant into Trial, PastDue or Restricted returns 409. At launch the only state actions are Create pilot tenant (into Active), FR-SA-011 suspend / unpublish, and reinstate.
+- Publishing while Suspended returns 409 with "Your site is suspended. Contact SSPL support." and the reason (CEO-A1).
+- Every request runs in one explicit transaction that sets the tenant first (08 §5.2, R3).
 
 ## 2. Modules and key endpoints
 
@@ -23,8 +27,10 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/api/v1/auth/tenant/signup` | Create tenant + Owner (marketing sign-up) |
-| POST | `/api/v1/auth/otp/send` · `/verify` | Email/phone OTP (sign-up, customer login) |
+| POST | `/api/v1/auth/tenant/signup` | Create tenant + Owner (marketing sign-up) (P1-B; returns 404 at launch, CEO-S1) |
+| GET | `/api/v1/auth/invitations/{token}` | Check an invitation (staff or pilot Owner); expired or used → 410 (FR-TA-172, CEO-A2) |
+| POST | `/api/v1/auth/invitations/{token}/accept` | Accept: phone OTP, set password and MFA; the Owner also accepts ToS and DPA. Single use; ends the pre-handover setup grant for an Owner invite (R19) |
+| POST | `/api/v1/auth/otp/send` · `/verify` | Email/phone OTP (invite acceptance, sign-up, customer login) |
 | POST | `/api/v1/auth/tenant/login` · `/logout` · `/refresh` | Tenant user session (BFF) |
 | POST | `/api/v1/auth/tenant/mfa/setup` · `/mfa/verify` | TOTP |
 | POST | `/api/v1/auth/password/forgot` · `/reset` | |
@@ -35,18 +41,19 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/public/slugs/{slug}/availability` | Slug check |
-| GET/PUT | `/api/v1/admin/tenant` | Business details |
-| POST | `/api/v1/admin/tenant/gstin/verify` | GSTIN lookup |
-| GET | `/api/v1/admin/onboarding` | Checklist status |
-| PUT | `/api/v1/admin/onboarding/steps/{step}` | Save step |
-| GET | `/api/v1/admin/tenant/limits` | Plan limits and usage |
+| GET | `/api/v1/public/slugs/{slug}/availability` | Slug check (P1-B, FR-MW-012, CEO-S1) |
+| GET/PUT | `/api/v1/admin/tenant` | Business details (GSTIN format/checksum and PAN derivation at launch) |
+| POST | `/api/v1/admin/tenant/gstin/verify` | GSTIN legal-name lookup (P1-B, CEO-S2) |
+| GET | `/api/v1/admin/onboarding` | Owner "left to do" checklist status (FR-TA-002): Razorpay KYC/OAuth, GSTIN/PAN, DNS, ToS, DPA; each item re-checked on load |
+| GET | `/api/v1/admin/onboarding/handoff` | First-login handoff: audited changes SSPL made under the pre-handover setup grant (11A, R19) |
+| PUT | `/api/v1/admin/onboarding/steps/{step}` | Save wizard step (P1-B, CEO-S2) |
+| GET | `/api/v1/admin/tenant/limits` | Removed in v0.2 (no plan limits, D1) |
 
 ### 2.3 Sites (builder, preview, publish)
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/admin/themes` | Available themes (by plan) |
+| GET | `/api/v1/admin/themes` | Available themes: every released theme, for every tenant (D1, CEO-S3) |
 | GET/PUT | `/api/v1/admin/site/branding` | Branding tokens |
 | PUT | `/api/v1/admin/site/theme` | Switch theme |
 | GET/PUT | `/api/v1/admin/site/draft` | Draft content (ETag) |
@@ -54,9 +61,9 @@
 | CRUD | `/api/v1/admin/site/pages` | Custom pages |
 | POST | `/api/v1/admin/site/preview-links` | Shareable preview token |
 | POST | `/api/v1/admin/site/publish/checks` | Run pre-publish checks |
-| POST | `/api/v1/admin/site/publish` | Publish (first → review) |
+| POST | `/api/v1/admin/site/publish` | Publish (first → review); 409 while Suspended (CEO-A1) |
 | GET | `/api/v1/admin/site/versions` | History |
-| POST | `/api/v1/admin/site/versions/{n}/restore` | Roll back |
+| POST | `/api/v1/admin/site/versions/{n}/restore` | Roll back; 409 while Suspended (CEO-A1) |
 | POST | `/api/v1/admin/media/uploads` | Presigned upload |
 | GET/PATCH/DELETE | `/api/v1/admin/media/{id}` | Alt text, delete |
 | GET | `/internal/sites/{tenantId}/versions/{n}/render-input` | Renderer input |
@@ -94,7 +101,7 @@
 | GET | `/api/v1/public/site-config` | Branding tokens, locations, products summary, policies, contacts |
 | GET | `/api/v1/public/products?locationId=` | Catalog |
 | GET | `/api/v1/public/products/{slug}` | Product detail |
-| GET | `/api/v1/public/products/{id}/availability?from=&to=&quantity=` | Slots / day capacity / monthly availability |
+| GET | `/api/v1/public/products/{id}/availability?from=&to=&quantity=&duration=` | Start times for a chosen duration, merged across units unless a unit is chosen (1A) / day capacity / monthly availability |
 | POST | `/api/v1/public/quotes` | Price breakdown for a selection (coupon, add-ons, GST) |
 | GET | `/api/v1/public/tours/availability?locationId=&date=` | Tour slots |
 | POST | `/api/v1/public/leads` | Contact form / enquiry / tour request |
@@ -103,7 +110,9 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/api/v1/public/bookings/holds` | Create hold (Instant) + payment order |
+| POST | `/api/v1/public/bookings/holds` | Create hold (Instant) + payment order, after phone OTP (customer token required); re-quotes the price and returns any difference before Razorpay opens; if the slot was taken, returns the next free times (2A) |
+| GET | `/api/v1/me/checkout/{bookingRef}/status` | Resumable checkout state for UPI return or reload; requires the customer's session, another customer gets 404 (9A, R16) |
+| GET | `/api/v1/public/passes/{token}` | Desk pass: opaque purpose-bound token; returns first name + last initial, date/time, room, logo and a short-lived check-in code; expired, revoked, wrong-tenant or wrong-purpose → not found (17A, R10) |
 | DELETE | `/api/v1/public/bookings/holds/{id}` | Release hold |
 | POST | `/api/v1/public/bookings/requests` | Request to Book |
 | GET | `/api/v1/me/bookings` · `/me/bookings/{id}` | Customer bookings |
@@ -116,7 +125,7 @@
 | POST | `/api/v1/admin/bookings/{id}/cancel` | Cancel (with optional override) |
 | POST | `/api/v1/admin/bookings/{id}/reschedule` | |
 | POST | `/api/v1/admin/bookings/{id}/check-in` · `/no-show` | Front desk |
-| POST | `/api/v1/admin/check-ins/scan` | Validate QR payload |
+| POST | `/api/v1/admin/check-ins/scan` | Validate the pass QR check-in code against the scanning tenant only (R10) |
 | GET | `/api/v1/admin/bookings/{id}/timeline` | Event history |
 
 ### 2.8 Payments
@@ -133,7 +142,7 @@
 | POST | `/api/v1/admin/payments/offline` | Record offline payment |
 | POST | `/api/v1/admin/refunds` · GET `/admin/refunds` | Refunds |
 | POST | `/webhooks/razorpay/tenant` | Tenant-account events (payment, refund, order) |
-| POST | `/webhooks/razorpay/platform` | SSPL account events (subscriptions) |
+| POST | `/webhooks/razorpay/platform` | SSPL account events: hosting invoice payment links and UPI Autopay / e-mandate debits (P1-B) |
 
 ### 2.9 Invoicing
 
@@ -196,34 +205,60 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/admin/billing` | Plan, next invoice, usage, fee allocation |
-| GET | `/api/v1/public/platform-plans` | Plans for marketing + admin |
-| POST | `/api/v1/admin/billing/subscription` · PATCH · DELETE | Start, change, cancel |
-| GET | `/api/v1/admin/billing/invoices` · `/{id}/pdf` | SSPL invoices |
-| POST | `/api/v1/admin/billing/wallet/top-ups` | Messaging wallet top-up |
+| GET | `/api/v1/admin/billing` | Billing page (5A, P1-B): next invoice (issue date, last month's amount, due date, adjustment line), "₹0 commission" line, messaging wallet, AWS breakdown by service category plus tenant count, daily charge estimate (low/high, as of); pilots see the free-period end date and what SSPL covered. Never other tenants' usage |
+| GET | `/api/v1/public/platform-plans` | Removed in v0.2 (no plans, D1) |
+| POST | `/api/v1/admin/billing/subscription` · PATCH · DELETE | Removed in v0.2 (no subscriptions, D1) |
+| PUT | `/api/v1/admin/billing/payment-method` | Payment link details or UPI Autopay / e-mandate (₹5,000 maximum) (P1-B, Pilot Rules #6, #10) |
+| GET | `/api/v1/admin/billing/invoices` · `/{id}/pdf` | SSPL hosting invoices (P1-B) |
+| GET | `/api/v1/admin/billing/wallet` | Messaging wallet balance and usage; pilots see fair-use cap usage (Pilot Rules #5) |
+| POST | `/api/v1/admin/billing/wallet/top-ups` | Messaging wallet top-up for non-pilots (P1-B, CEO-S1) |
 
 ### 2.15 Platform (Super Admin)
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/platform/tenants?state=&plan=&q=` | Tenant list |
+| GET | `/api/v1/platform/tenants?state=&pilot=&q=` | Tenant list |
 | GET | `/api/v1/platform/tenants/{id}` | Tenant detail |
 | GET | `/api/v1/platform/reviews` · POST `/reviews/{id}/approve` · `/reject` · `/request-changes` | First-publish queue |
-| POST | `/api/v1/platform/tenants/{id}/suspend` · `/reinstate` · `/unpublish` | Enforcement |
-| POST | `/api/v1/platform/tenants/{id}/trial-extension` · `/credits` | Commercial actions |
+| POST | `/api/v1/platform/tenants/{id}/suspend` · `/reinstate` · `/unpublish` | Enforcement (FR-SA-011, with reason, audited). Suspend and reinstate raise `TenantStateChanged`, which triggers the TenantStateCtaService render (CEO-A1). A repeat suspend is a no-op |
+| POST | `/api/v1/platform/tenants/{id}/trial-extension` · `/credits` | Commercial actions: trial extension, hosting invoice credits (P1-B) |
 | POST | `/api/v1/platform/tenants/{id}/support-grants` | Request access |
 | POST | `/api/v1/platform/tenants/{id}/deletion` · `/deletion/{id}/approve` | Two-person deletion |
-| CRUD | `/api/v1/platform/plans` | Plans and versions |
-| GET | `/api/v1/platform/invoices` · `/dunning` | Finance |
+| POST | `/api/v1/platform/pilots` | Create pilot tenant: business name, city, slug; created in Active with the pilot flag, plus the pre-handover setup grant and an `edge_sync` row. `Idempotency-Key` required; slug taken → 409 (CEO-A2, R19, R17) |
+| POST | `/api/v1/platform/pilots/{tenantId}/owner-invite` | Send or resend the Owner invite (FR-TA-172 flow, Owner role, single use, 72 h); a resend revokes the old link; held while the tenant's edge mapping is pending (CEO-A2) |
+| GET | `/api/v1/platform/pilot-requests` · PATCH `/pilot-requests/{id}` | Pilot requests list and status (CEO-A2) |
+| GET | `/api/v1/platform/pilots/scorecard?month=` · `/scorecard.csv` | Pilot scorecard per pilot per month and roll-up with expansion gate, "as of" time; CSV export (CEO-A4, R20) |
+| CRUD | `/api/v1/platform/plans` | Removed in v0.2 (no plans, D1) |
+| GET | `/api/v1/platform/billing/cost-pools` · `/cost-pools/{month}` | Cost pool, service breakdown, tenant shares, run status (held, final) (P1-B, 28A, R2) |
+| GET | `/api/v1/platform/billing/hosting-invoices` · `/dunning` | Finance: hosting invoices, adjustment lines, dunning (P1-B) |
 | CRUD | `/api/v1/platform/themes` | Theme catalog |
 | GET/PUT | `/api/v1/platform/settings` · `/feature-flags` · `/messaging-rates` | Settings |
-| GET | `/api/v1/platform/metrics/business` · `/metrics/health` | Dashboards |
+| GET | `/api/v1/platform/metrics/health` | Health dashboard |
+| GET | `/api/v1/platform/metrics/business` | Sign-ups, trials, conversions, churn, referrals (P1-B, FR-SA-051, CEO-A4) |
+| GET | `/api/v1/platform/metrics/cost-recovery` | Tenant hosting payments against the production AWS bill plus messaging, with SSPL's unrecovered cost (P1-B, CEO-A5) |
 | GET | `/api/v1/platform/audit-events` | Global audit |
 
 ### 2.16 Internal / edge
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/internal/edge/routes/sync` | Push host → tenant/version/state into CloudFront KeyValueStore |
-| POST | `/internal/renderer/jobs/{id}/complete` | Renderer callback |
+| POST | `/internal/edge/routes/sync` | Removed in v0.2: no job or endpoint pushes to KeyValueStore; the EdgeSyncWorker job does (§2.18, R17) |
+| POST | `/internal/renderer/jobs/{id}/complete` | Renderer callback; the API then runs the pointer switch with the state check and the `data_seq` rule (08 §8, CEO-A1, CEO-A3, R18) |
 | GET | `/healthz` · `/readyz` | Health checks |
+
+### 2.17 Marketing site (`cowos.in`)
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/v1/marketing/pilot-requests` | Book-a-demo / pilot request form (FR-MW-008): honeypot, 5 per IP per hour, invisible challenge; validates name, phone (+91 E.164), email, space, city, message ≤ 2,000 characters (400 with inline errors); saves the request before notifying sales through the email outbox; same phone within 24 h updates the existing request; DB unavailable → 503 and no email (CEO-A2) |
+
+The pricing page's "last month's actual" number comes from the pricing JSON written after each billing run (P1-B, R12), not from an API call.
+
+### 2.18 Worker jobs with no HTTP endpoint
+
+| Job | Purpose |
+|-----|---------|
+| EdgeSyncWorker | Single consumer of the `edge_sync` outbox: reads each tenant's current DB pointer and state and writes them to CloudFront KeyValueStore with `UpdateKeys` and `IfMatch`, retrying on 409, batching tenants (08 §6, R17) |
+| MonthlyHostingBilling (P1-B) | On the 10th: CUR 2.0 → CostPool → TenantCostShare → HostingInvoice + payment link; AdjustmentLine for prior-month changes; held with daily retry when the bill is not final (08 §4, R1, R2) |
+| ChargeEstimateService (P1-B) | Daily after the CUR refresh: stores the low/high estimate on CostPool (R15) |
+| Pricing JSON (P1-B) | After each billing run: writes the per-space average share and rebuilds the marketing pricing page (R12) |

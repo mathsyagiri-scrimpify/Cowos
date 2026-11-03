@@ -1,6 +1,6 @@
 # Cowos Requirements Pack
 
-Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.1 (2026-10-30).
+Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.2 (2026-11-03): updated to the approved design doc `docs/designs/cowos-platform-v1.md` (hosting cost only, pilot rules, CEO and eng review decisions).
 
 New to this work? Read the [handoff notes](../HANDOFF.md) first for current status and next steps.
 

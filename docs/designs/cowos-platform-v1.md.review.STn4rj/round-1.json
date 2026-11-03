@@ -1,0 +1,152 @@
+{
+  "version": 2,
+  "round": 1,
+  "document": "D:\\Projects\\Cowos\\docs\\designs\\cowos-platform-v1.md",
+  "quality_score": 5,
+  "dimensions": {
+    "completeness": "ISSUES",
+    "consistency": "ISSUES",
+    "clarity": "ISSUES",
+    "scope": "PASS",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R1-1",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Recommended Approach says 'The first pilot goes live around week 18'. Under 12-release-plan.md §3, the week-18 pilot runs 'on staging with live Razorpay test mode first'. Notifications (email/SMS/WhatsApp), custom domains + SSL, platform billing and Super Admin essentials only arrive in M5 (weeks 19–21). The Phase 1 booking app needs phone/email OTP to sign customers in, so a week-18 pilot cannot take real customer bookings or send confirmations. 'Goes live' overstates what the owner gets at week 18 and makes the pilot timeline in the consequences unreliable.",
+      "remedy": "Say what a pilot can do at week 18 (staging, test mode, no real customers) and give the earliest week it can take real paid bookings on production. Or commit to moving customer OTP/email delivery and production payments ahead of week 18, and show the effect on the release plan."
+    },
+    {
+      "id": "R1-2",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The design commits to 20 pilots and proposes '20 pilot spaces live within 6 weeks of the week-24 launch'. The release plan it adopts unchanged ('needs no re-sequencing of the existing release plan') sets the Phase 1 exit criterion and launch checklist at '10 pilot tenants live; at least 5 with paid online bookings', and OQ10's default is to recruit 10. The design does not say which number gates launch.",
+      "remedy": "State the launch gate explicitly: either 10 pilots live at week 24 with the other 10 onboarded within 6 weeks after, or 20 before launch. Record that 12-release-plan.md §1/§4 and OQ10 must be updated to match, and drop the claim that no change to the release plan is needed."
+    },
+    {
+      "id": "R1-3",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The pilot-year hosting estimate (₹3,600–8,000/month for 20 tenants, 'from the pack's ₹180–400 per tenant') is not supported by the pack. 00-start-here.md §C2 gives ~₹100–₹400 per small tenant 'at 200+ tenants' plus a fixed base of ~₹25,000–₹45,000/month regardless of tenant count. At 20 tenants the fixed base dominates, so SSPL's real pilot-year hosting cost is several times higher than stated. The owner is being asked to accept this cost as a consequence of Approach A.",
+      "remedy": "Recompute the pilot-year cost from the pack's own figures: the fixed platform base plus per-tenant marginal cost, over the actual pilot-year duration including staging/production environments. Or label the figure unverified with its true source. Show the SSPL-borne total for the free year."
+    },
+    {
+      "id": "R1-4",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The free pilot year has no defined representation in the platform billing the MVP builds. The pack's MVP billing has a 14-day no-card trial (00 Q15), Razorpay Subscriptions, dunning, and a restrict/suspend/retain/delete state machine. Messaging is billed from a prepaid wallet (C1). The design does not say how a pilot account avoids trial expiry, dunning and suspension, or what happens to wallet-gated messaging at zero balance. Without this, the standard state machine would restrict pilots after 14 days or block their messages.",
+      "remedy": "Specify the pilot billing mechanism: for example a 'pilot' plan or state with its own end date, no subscription or mandate required, exemption from dunning and trial expiry, wallet bypass or SSPL-funded wallet, and whether ₹0 SSPL invoices are issued. Note it as a requirement change to FR-PB-* in the pack."
+    },
+    {
+      "id": "R1-5",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "'12 months fully free' does not say which plan's entitlements pilots get. Starter, Growth and Pro differ in locations, bookable resources, memberships, widget, staff roles and API (00 §C1). Memberships and the widget ship in Phase 2 during the pilot year. Feature gating and the month-13 price comparison both depend on this tier.",
+      "remedy": "Decide and document the plan tier, or the per-feature limits, that pilots receive during the free year, and whether Phase 2 features are included when they ship."
+    },
+    {
+      "id": "R1-6",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Pilot terms commit to 'messaging included' with no cap, rate limit or fair-use behavior. This departs from the pack's at-cost prepaid wallet (C1, D7, OQ2) and leaves SSPL exposed to unbounded SMS/WhatsApp cost, including OTP-pumping abuse on 20 public booking sites. Listing the budget cap as Open Question 3 does not define what the system does in the meantime.",
+      "remedy": "Commit to a default fair-use limit per pilot (the number can stay provisional) and the behavior when it is reached: for example fall back to email, alert SSPL, or require a wallet top-up. Confirm OTP rate limiting applies to pilot tenants. Record the change against D7/OQ2."
+    },
+    {
+      "id": "R1-7",
+      "dimension": "clarity",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The start of the 12-month free period is undefined. It could run from signing, from week-18 staging onboarding, from first production publish, or from the week-24 launch. 'Month 13', the hosting-cost window and the success criterion 'by month 6 of the pilot' all depend on it, and pilots onboarded weeks apart would convert at different times.",
+      "remedy": "Define when each pilot's free year starts (for example the date of first live publish on production) and whether it runs per tenant or as one shared cohort end date."
+    },
+    {
+      "id": "R1-8",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Open Question 4 leaves month 13 open, but the platform has to do something when a pilot's free year ends. The design does not say what happens if a pilot neither picks a plan nor pays: whether the site moves to restricted or suspended, whether existing customer bookings keep working (R20), or how much notice is given. Leaving the price open is acceptable. Leaving the system behavior open is not.",
+      "remedy": "Specify the default end-of-pilot behavior independent of price: notice schedule, default plan or state if no action is taken, grace period, and protection of the tenant's existing customer bookings and data export."
+    },
+    {
+      "id": "R1-9",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The design says platform billing's 'real-world testing starts with non-pilot tenants'. Nothing in the design brings in non-pilot paying tenants before month 13: Premise 4 holds to one beachhead, the first 20 owners there are free, and recruitment covers only pilots. Billing, dunning and suspension could first run for real when all 20 pilots convert at month 13, risking billing errors that hit SSPL's most important accounts.",
+      "remedy": "Name how billing is validated before month 13. Options include an SSPL-owned live tenant paying real subscriptions, an intended set of early paid non-pilot tenants with a source and timing, or staggered pilot conversion. Make this validation an exit criterion before the first pilot converts."
+    },
+    {
+      "id": "R1-10",
+      "dimension": "clarity",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "Premise 4 keeps 'one beachhead before expanding' but drops the expansion trigger from HANDOFF.md §4.4 ('Expand after 20 pay'). Pilots pay nothing for 12 months, so that trigger cannot fire before month 13. The design does not say what signal allows expansion, or whether paying tenants are accepted inside or outside the beachhead during the pilot year, even though self-serve sign-up and billing are built for them.",
+      "remedy": "State the expansion gate (metric and threshold) and the policy for non-pilot sign-ups during the pilot year, in the beachhead city and elsewhere."
+    },
+    {
+      "id": "R1-11",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": null,
+      "problem": "The Distribution Plan says 'Pilot tenants are onboarded by SSPL'. That is the done-for-you onboarding element of rejected Approach C, but it is still required under Approach A. The MVP has only support grants, and assisted-onboarding tooling is Phase 2 (12 §2). Steps like Razorpay OAuth/KYC, GSTIN/PAN, DNS changes and ToS/DPA acceptance must still be done by the owner. No one is assigned, and no capacity is set aside, to onboard 20 pilots within 6 weeks of launch while the 7–8 person team is hardening (R22).",
+      "remedy": "Define the pilot onboarding process: who at SSPL does it, which steps SSPL performs via support grant versus which the owner must perform, which MVP tools are used, and the staff time budgeted against the release plan."
+    },
+    {
+      "id": "R1-12",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The second success criterion says it 'matches goal G2', but G2 in 01-product-vision-and-scope.md §3 is measured across active tenants 12 months after MVP launch. The design measures pilots at month 6 of the pilot, a different and earlier target.",
+      "remedy": "Describe it as a pilot-specific, earlier version of G2 rather than a match."
+    },
+    {
+      "id": "R1-13",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "'The first 20 owners in the beachhead city' reads as first-come, first-served, while Open Question 2 asks how the 20 are chosen. The Assignment asks for the first 5 to be signed before the city (OQ1) or selection criteria (OQ2) are settled. 'Sign' is also undefined given 'no commitments required'.",
+      "remedy": "Say whether pilots are first-come or selected, give interim criteria for the first 5, and define what 'signing' a pilot means (for example a pilot letter covering free-year terms, ToS/DPA acceptance and month-13 notice)."
+    },
+    {
+      "id": "R1-14",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The Problem Statement and Premise 2 present direct payment through the tenant's own Razorpay account and flat-plan 0% commission as settled product definition. Open Question 5 and the Dependencies section say D1 and D3 are still Proposed and block engineering. Readers could take Premise 2 as approving D1/D3.",
+      "remedy": "Note that Premise 2 sets the product direction, but D1 and D3 stay Proposed until the decision log is updated."
+    },
+    {
+      "id": "R1-15",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The myHQ '25–30% per booking' figure, which supports the commission-recovery pitch, has no source link in the design. It is also a single aggregator's figure from one 2023 interview.",
+      "remedy": "Add the source link (as in HANDOFF.md §4.3) and say that it is one aggregator's reported rate, still to be confirmed through pilot interviews."
+    },
+    {
+      "id": "R1-16",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Demand Evidence records '1–3 casual conversations', a range rather than a count, with no names or notes. The design's key unverified premise cannot be traced.",
+      "remedy": "Record the actual number of conversations and, where possible, the spaces and what each said, or state that no notes exist."
+    },
+    {
+      "id": "R1-17",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Approach A is rated 'Effort XL, risk medium-high' but does not mention the pack's team-capacity risk (R22: 5-month MVP is tight) or the cut list (12 §5) that would protect the week-24 date. It adds pilot recruitment and SSPL-run onboarding on top.",
+      "remedy": "Reference R22 and say which cut-list items the owner accepts as the contingency if the week-24 date slips."
+    }
+  ],
+  "prior": []
+}

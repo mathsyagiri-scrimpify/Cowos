@@ -1,0 +1,178 @@
+{
+  "version": 2,
+  "round": 2,
+  "document": "D:\\Projects\\Cowos\\docs\\designs\\cowos-platform-v1.md",
+  "quality_score": 7,
+  "dimensions": {
+    "completeness": "ISSUES",
+    "consistency": "ISSUES",
+    "clarity": "ISSUES",
+    "scope": "PASS",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R2-1",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "pilots take real paid bookings on production",
+      "problem": "Pilot Rules #1 puts real customers, real payments and customer personal data on production from week 22. Under 12-release-plan.md §3/§4, the pen test and its fixes, the DR drill and the accessibility/performance passes all happen in M6 (weeks 22–24), and the launch checklist gates Razorpay Partner approval, DLT/WhatsApp/SES approvals, the cross-tenant isolation suite and counsel review of the ToS/DPA. Pilot owners accept the ToS and DPA during onboarding (Pilot Rules #9, weeks 22–30). The design sets no entry gate for production pilots, so real money and customer data could go live before the security, isolation and legal checks the pack requires for launch.",
+      "remedy": "Define a production-entry gate for week-22 pilots. It should be the subset of the §4 launch checklist that must pass before any real customer booking, at minimum: isolation suite green, Razorpay Partner live, messaging approvals, ToS/DPA/privacy reviewed by counsel, and backups/restore verified. Then either schedule the pen test (or its critical/high fixes) before week 22, or record that pilots go live before the pen test as an explicit accepted risk with the owner's sign-off. If the gate cannot be met by week 22, move the production date."
+    },
+    {
+      "id": "R2-2",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "At the cap, notifications fall back to email only and SSPL gets an alert",
+      "problem": "Pilot Rules #5 does not say whether customer sign-in OTPs (SMS, or WhatsApp OTP per FR-BA-001) count toward the 1,000-message cap, or whether OTP is cut off at the cap. If OTPs count and fall back to email only, customers who sign in by phone cannot authenticate at checkout, and pilot bookings stop. If OTPs are exempt, the 'at most about ₹60,000' messaging cost is not actually bounded by the cap. 11-integrations.md §3 already treats OTP cost differently ('absorbed by the platform plan, decision D7'), and FR-PL-040's WhatsApp-to-SMS fallback can send two messages for one event.",
+      "remedy": "State whether OTP messages count toward the pilot cap. If they are exempt, say they keep working at the cap, protected only by OTP rate limits, and restate the cost ceiling to include them. If they count, define what phone-only customers see at the cap (for example, forced email OTP). Also say whether a WhatsApp message followed by an SMS fallback counts as one message or two."
+    },
+    {
+      "id": "R2-3",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "It needs no subscription or mandate and is exempt from trial expiry and dunning",
+      "problem": "The 'Pilot' platform plan is not mapped to the tenant state machine (FR-PL-062: Trial → Active → PastDue → …), and several MVP rules depend on that state. FR-TA-041 allows publish only if the subscription is 'active or in trial (trial: platform subdomain only)'. BRD §7.3 enables custom domains only on Activation, which is triggered by paying the first invoice. FR-TW-008 keeps trial subdomains noindex 'until the first paid activation'. A ₹0 plan with no subscription could therefore block custom domains, or leave a pilot site noindexed for its whole free year, which defeats the local-SEO value of the pilot. Pilot Rules #3 also starts the year at first live publish, so the plan's end date and state before that publish are undefined.",
+      "remedy": "State the tenant state a Pilot tenant holds (for example Active with plan=Pilot, or a dedicated Pilot state) from creation to first publish and through the free year. Say how FR-TA-041's publish check, custom-domain enablement and FR-TW-008 indexing treat it. Add FR-TA-041, FR-TW-008 and BRD §7.3 to the list of pack updates."
+    },
+    {
+      "id": "R2-4",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "then the **Restricted** state from BRD §7.3",
+      "problem": "Pilot Rules #6 sends a non-converting pilot to Restricted, but does not say whether that state is terminal. In BRD §7.3, Restricted lasts only for days 8–21 past due. It is followed by Suspended (website replaced by an 'unavailable' page) at day 22+, and then data retention and deletion of personal data and content at day 91. If the standard machine applies, an unconverted pilot's site goes down and its data is deleted about four months after the free year ends. That contradicts the promise that 'the website stays live', and the design does not say this was intended.",
+      "remedy": "State whether a pilot that never picks a plan stays Restricted indefinitely or moves on to Suspended, retention and deletion. If it moves on, give the timeline after the grace period and the notices and export reminders sent before suspension and deletion."
+    },
+    {
+      "id": "R2-5",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "Budget: about 10 person-days across weeks 22–30, outside the core dev team",
+      "problem": "Pilot Rules #1 has pilots set up and running on staging from week 18, then on production from week 22. The design does not say how a staging tenant becomes a production tenant. The MVP has no tenant migration or import tool between environments (staging and prod are separate AWS accounts per 08 §14), and the Razorpay test-mode connection, domains, DNS and first-publish review would all have to be redone. Either SSPL rebuilds each pilot's inventory, theme and content on production, or engineering must build a staging-to-production copy. Neither is budgeted. The 10 person-days cover only weeks 22–30 and only half a day per pilot, and staging-phase onboarding in weeks 18–21 has no owner or time at all.",
+      "remedy": "Choose and document the transition. Either re-create pilots on production (budget that effort and the weeks-18–21 staging support), or provide a tenant export/import path between environments (add it to the release plan as engineering work with an estimate). Alternatively, onboard pilots on production in test mode from week 18 and drop the staging step."
+    },
+    {
+      "id": "R2-6",
+      "dimension": "completeness",
+      "severity": "minor",
+      "changed_text": "Exit criterion before the first pilot converts",
+      "problem": "Pilot Rules #7 sets a billing-validation exit criterion but does not say what happens if it is unmet when the first pilot's free year ends: delay conversion, extend the free period, or convert anyway. The risk is low, since SSPL's paid test tenant runs from week 24 and the first conversion is around week 74.",
+      "remedy": "Name the owner who checks the criterion and the fallback if it is not met by the first pilot end date."
+    },
+    {
+      "id": "R2-7",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "open a second city when 10 pilots each take 10 or more paid online bookings a month for 3 consecutive months",
+      "problem": "Non-pilot spaces can sign up 'in any city' from launch (Pilot Rules #7), so 'open a second city' must mean something other than accepting tenants there, presumably recruitment and marketing effort. That is not stated. The gate also measures booking usage by free pilots, not willingness to pay, which is what HANDOFF.md's 'expand after 20 pay' trigger measured.",
+      "remedy": "Define what 'opening' a city involves (recruitment, sales, marketing spend). Note that the gate tests usage rather than payment, and that this replaces the 'expand after 20 pay' trigger."
+    },
+    {
+      "id": "R2-8",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": "20 × 1,000 × 12 messages at roughly ₹0.25",
+      "problem": "The ₹0.25 per-message rate has no source. The pack (11-integrations.md §4) says Meta WhatsApp pricing varies by category and must be confirmed at build time, and the pack gives no SMS rate. The hosting figures do trace correctly to 00 §C2 and 08 §14.",
+      "remedy": "Cite the source of ₹0.25 or label it an assumption, and give the rate split by SMS and each WhatsApp category."
+    },
+    {
+      "id": "R2-9",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "These change the pack: `12-release-plan.md` §1/§4, OQ10",
+      "problem": "The list of pack updates leaves out 12-release-plan.md §3, whose M6 row ('pilot with 10 tenants') and week-18 pilot note are changed by Pilot Rules #1. It also omits the other requirements the Pilot plan touches (see R2-3).",
+      "remedy": "Add §3 to the update list, along with any further FR/BRD items identified when R2-3 is resolved."
+    },
+    {
+      "id": "R2-10",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "One named SSPL owner (PM or support lead) runs pilot onboarding",
+      "problem": "The rule says the onboarding owner is 'named' but gives a choice of role, not a person. The PM is also one of the 00 Q12 team, so 'outside the core dev team' depends on who is picked.",
+      "remedy": "Name the person, or the role and when they will be named, and confirm that their time is not taken from the release plan's capacity."
+    },
+    {
+      "id": "R2-11",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "SSPL does setup through a tenant-approved support grant (FR-SA-030)",
+      "problem": "BR-05 defines assisted onboarding as a paid one-time service. Pilots receive it free. FR-SA-030 grants are 'read-only by default', but the rule needs write access for inventory, theme and content setup.",
+      "remedy": "Note the pilot exception to BR-05, and state that pilot support grants are write-enabled, with their scope and expiry."
+    },
+    {
+      "id": "R2-12",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "**10 pilots live at the week-24 launch** (the pack's existing gate)",
+      "problem": "The pack's existing gate is '10 pilot tenants live; at least 5 with paid online bookings' (12 §1/§4). The design repeats only the first half, so it is unclear whether the paid-bookings condition still gates launch.",
+      "remedy": "State whether 'at least 5 with paid online bookings' still applies at week 24."
+    },
+    {
+      "id": "R2-13",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The second success criterion still says it 'matches goal G2', but G2 is measured across active tenants 12 months after launch. The design measures pilots at month 6 of the pilot.",
+      "remedy": "Describe it as a pilot-specific, earlier version of G2 rather than a match."
+    },
+    {
+      "id": "R2-14",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "'The first 20 owners in the beachhead city' still reads as first-come, first-served, while Open Question 2 asks how the 20 are chosen. The Assignment still asks for 5 pilots to be signed before the city or criteria are settled, and 'sign' is undefined given 'no other commitments required'.",
+      "remedy": "Say whether pilots are first-come or selected, give interim criteria for the first 5, and define what signing a pilot means (for example a pilot letter covering the Pilot Rules, ToS/DPA acceptance and end-of-year notice)."
+    },
+    {
+      "id": "R2-15",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The Problem Statement and Premise 2 still present direct Razorpay payment and 0% commission as settled, while Open Question 5 and Dependencies say D1/D3 are still Proposed.",
+      "remedy": "Note that Premise 2 sets product direction, but D1 and D3 stay Proposed until the decision log is updated."
+    },
+    {
+      "id": "R2-16",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "The myHQ '25–30% per booking' figure still has no source link and comes from a single 2023 interview.",
+      "remedy": "Add the source link (as in HANDOFF.md §4.3) and say that it is one aggregator's reported rate, still to be confirmed in pilot interviews."
+    },
+    {
+      "id": "R2-17",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Demand Evidence still records '1–3 casual conversations', a range rather than a count, with no names or notes.",
+      "remedy": "Record the actual number of conversations and, where possible, the spaces and what each said, or state that no notes exist."
+    },
+    {
+      "id": "R2-18",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Approach A is still rated 'Effort XL, risk medium-high' without referencing the team-capacity risk R22 or the cut list in 12 §5. Pilot staging and production work from week 18 adds to the hardening-phase load.",
+      "remedy": "Reference R22 and say which cut-list items the owner accepts as the contingency if the week-24 date slips."
+    }
+  ],
+  "prior": [
+    {"id": "R1-1", "status": "resolved", "evidence": "Pilot Rules #1 states that weeks 18–21 are staging in Razorpay test mode only, with no real customers, and that real paid bookings on production start from week 22, after M5 notifications, domains and billing. Recommended Approach repeats this. The production-entry gate gap is a new refinement (R2-1).", "current_id": null},
+    {"id": "R1-2", "status": "resolved", "evidence": "Pilot Rules #1 sets 10 pilots live at the week-24 launch and the other 10 within 6 weeks. Success Criteria match. Recommended Approach now says the release plan's pilot gate and launch checklist change, and the Pilot Rules header and Dependencies list 12-release-plan.md §1/§4 and OQ10 for update.", "current_id": null},
+    {"id": "R1-3", "status": "resolved", "evidence": "Pilot-year cost is recomputed from the fixed base of ₹25,000–45,000/month (00 §C2) × 12 = ₹3–5.4 lakh, plus staging at +30–40% (08 §14) = ₹4–7.5 lakh, plus capped messaging. The arithmetic checks against the pack. The messaging rate's source is a separate minor point (R2-8).", "current_id": null},
+    {"id": "R1-4", "status": "resolved", "evidence": "Pilot Rules #4 defines a ₹0 'Pilot' plan with a per-tenant end date, no subscription or mandate, exemption from trial expiry and dunning, an SSPL-funded messaging wallet and no ₹0 invoices, and lists FR-PL-060/061/062 and FR-TA-175/176 for update. Mapping to the tenant state machine is a new refinement (R2-3).", "current_id": null},
+    {"id": "R1-5", "status": "resolved", "evidence": "Pilot Rules #2 gives pilots Growth plan limits, plus Phase 2 features (memberships, widget, PWA) as they ship.", "current_id": null},
+    {"id": "R1-6", "status": "resolved", "evidence": "Pilot Rules #5 sets a provisional cap of 1,000 SMS + WhatsApp messages per pilot per month, applies OTP rate limits to pilots, and defines the at-cap behavior (email fallback plus an SSPL alert). D7/OQ2 are listed for update. How OTPs relate to the cap is a new refinement (R2-2).", "current_id": null},
+    {"id": "R1-7", "status": "resolved", "evidence": "Pilot Rules #3 starts the free year per tenant at first live publish on production, ending 12 months later, with no shared cohort end date.", "current_id": null},
+    {"id": "R1-8", "status": "resolved", "evidence": "Pilot Rules #6 sets notices at 60/30/7 days, a 14-day grace on Growth limits, then Restricted with the website live, existing bookings, cancellations and invoices working, export available and new bookings paused. Price stays open. Whether Restricted is terminal is a new refinement (R2-4).", "current_id": null},
+    {"id": "R1-9", "status": "resolved", "evidence": "Pilot Rules #7 opens non-pilot paid sign-ups from launch, runs an SSPL test tenant on a real paid subscription from launch, and makes a renewal plus an end-to-end dunning cycle on production an exit criterion before the first pilot converts.", "current_id": null},
+    {"id": "R1-10", "status": "resolved", "evidence": "Target User & Narrowest Wedge adds an expansion gate (10 pilots at 10+ paid online bookings a month for 3 consecutive months). Pilot Rules #7 sets the non-pilot sign-up policy (any city, from launch). Clarity of 'opening' a city is minor (R2-7).", "current_id": null},
+    {"id": "R1-11", "status": "resolved", "evidence": "Pilot Rules #9 assigns one SSPL owner, splits SSPL steps (via FR-SA-030 support grant) from owner steps (Razorpay KYC/OAuth, GSTIN/PAN, DNS, ToS/DPA), and budgets about 10 person-days outside the core dev team. The staging-to-production gap is new (R2-5).", "current_id": null},
+    {"id": "R1-12", "status": "persisting", "evidence": "Success Criteria still says '(matches goal G2 in 01-product-vision-and-scope.md)' for a month-6 pilot measure.", "current_id": "R2-13"},
+    {"id": "R1-13", "status": "persisting", "evidence": "Target User still says 'the first 20 owners', Open Question 2 is unchanged, and The Assignment still asks to 'Sign the first 5' with no definition of signing.", "current_id": "R2-14"},
+    {"id": "R1-14", "status": "persisting", "evidence": "Problem Statement and Premise 2 are unchanged and still read as settled, while Open Question 5 says D1–D16 are Proposed.", "current_id": "R2-15"},
+    {"id": "R1-15", "status": "persisting", "evidence": "Status Quo still cites 'A 2023 founder interview reports myHQ takes 25–30% per booking' with no link.", "current_id": "R2-16"},
+    {"id": "R1-16", "status": "persisting", "evidence": "Demand Evidence still reads '1–3 casual conversations with coworking owners' with no names or notes.", "current_id": "R2-17"},
+    {"id": "R1-17", "status": "persisting", "evidence": "Approach A still reads 'Effort XL, risk medium-high' with no reference to R22 or the 12 §5 cut list.", "current_id": "R2-18"}
+  ]
+}

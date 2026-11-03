@@ -1,0 +1,357 @@
+{
+  "version": 2,
+  "round": 3,
+  "document": "D:\\Projects\\Cowos\\docs\\designs\\cowos-platform-v1.md",
+  "quality_score": 6,
+  "dimensions": {
+    "completeness": "ISSUES",
+    "consistency": "ISSUES",
+    "clarity": "ISSUES",
+    "scope": "PASS",
+    "feasibility": "ISSUES"
+  },
+  "findings": [
+    {
+      "id": "R3-1",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "Platform billing (now charging the hosting cost share, not plans)",
+      "problem": "Premise 5 replaces fixed plans with a variable monthly charge: that month's AWS bill, taken from the Cost and Usage Report, divided by active tenants. The design does not say how this charge is collected or when. The pack's platform billing is built on Razorpay Subscriptions with UPI Autopay, e-mandate or card (00 §C4, 12 §2). Subscriptions charge a fixed plan amount each cycle, so a variable amount needs per-cycle add-ons or a different recurring-charge mechanism, with a mandate maximum and RBI pre-debit notice. The month's AWS bill is final only after the month ends, so the charge is in arrears. Yet the design gives no invoice date, due date, or estimate-and-true-up rule, and it says 'no subscription' while still relying on dunning (Pilot Rules #7). There is also a clash for non-pilot tenants who start paying after the 14-day trial: BRD §7.3 enables Activation, and with it custom domains, only when the first invoice is paid. With billing in arrears, that first invoice arrives about a month after the trial ends.",
+      "remedy": "Choose the collection mechanism: a Razorpay Subscription with a nominal plan plus per-cycle add-ons, token or e-mandate recurring charges, or invoice plus payment link. State the billing timing (arrears, or an estimate with a true-up), the invoice and due dates, and the mandate maximum. Redefine what moves a non-pilot from Trial to Active (for example, setting up a mandate or payment method) so that custom domains and indexing are not delayed until the first arrears invoice is paid."
+    },
+    {
+      "id": "R3-2",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "divided by the number of active tenants",
+      "problem": "Pilot Rules #10 defines the charge as the platform's AWS bill divided by active tenants, but leaves both inputs undefined. The cost pool: does it include only production, or also the staging account (+30–40% per 08 §14), dev, CI, the marketing site and Super Admin? Are credits, Savings Plans and taxes in it? The denominator: 'active' is not mapped to the FR-PL-062 states. It is unclear whether Trial, PastDue, Restricted, Suspended or retention-period tenants count, how SSPL's own test tenant and demo tenants count, and whether a tenant live for part of a month is prorated. Each choice changes every tenant's invoice. For example, excluding trial and unpaid tenants makes paying tenants fund their AWS costs, which conflicts with charging only 'their share'.",
+      "remedy": "Define the cost pool (which AWS accounts and cost lines are included) and the denominator (which tenant states count, how partial months are handled, and how SSPL's test and demo tenants are treated). Also state who absorbs the share of tenants that don't pay."
+    },
+    {
+      "id": "R3-3",
+      "dimension": "consistency",
+      "severity": "blocking",
+      "changed_text": "plus the tenant's own usage beyond fair use (storage over quota, messaging at cost)",
+      "problem": "S3 storage, CloudFront transfer and SES email are already in the AWS bill that is split equally. Charging a tenant again for 'storage over quota' bills that cost twice, unless the over-quota part is first removed from the shared pool. That contradicts 'only their share of the real AWS hosting cost'. The quotas and 'fair use' thresholds for non-pilot tenants are also undefined. FR-PL-030 has a per-tenant storage quota but no value, and the only fair-use cap in the design is the pilot messaging cap.",
+      "remedy": "State the storage quota and any other fair-use thresholds that apply to all tenants. Specify that usage billed per tenant is removed from the pool before the equal split, or drop the separate usage line, so that no AWS cost is charged twice."
+    },
+    {
+      "id": "R3-4",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "tenants pay only their share of the real AWS hosting cost plus messaging at cost",
+      "problem": "The messaging billing model is unclear. The pack uses a prepaid wallet debited per message (BRD §7.1, FR-PL-040, FR-TA-175), and pilots use an SSPL-funded wallet (Pilot Rules #4). Pilot Rules #10, however, puts 'messaging at cost' on the monthly charge, after usage 'beyond fair use'. The design does not say whether non-pilot messaging is prepaid or added to the monthly invoice afterwards. It doesn't say what happens at zero balance, or whether non-pilots get any free messaging allowance. It also doesn't say who pays for customer sign-in OTPs for non-pilot tenants: 11-integrations §3 and D7 had them 'absorbed by the platform plan', and there is no plan any more.",
+      "remedy": "Decide between a prepaid wallet and charging messaging on the monthly invoice, and state the behavior at zero balance or unpaid usage (for example, falling back to email). State whether non-pilots get a messaging allowance, and say who pays for sign-in OTPs, and at what rate, now that no plan absorbs them."
+    },
+    {
+      "id": "R3-5",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "That is no earlier than week 22, and likely week 24",
+      "problem": "The production entry gate now likely passes at week 24, but Pilot Rules #1 and the Success Criteria still require 10 pilots live on production at the week-24 launch. If pilots can't be set up on production until the gate passes, all 10 must go live in the same week. Each is set up fresh, at about half a day plus 2 hours, which is roughly 7.5 person-days for one onboarding owner. Each also needs SSPL's first-publish review (4-working-hour target) and owner-side Razorpay OAuth (which needs Partner approval) and DNS changes. The design doesn't say whether a production tenant can be created and configured, unpublished and with no live customer bookings, before the gate passes, or which gate items block only go-live.",
+      "remedy": "State which steps can happen on production before the gate passes (for example, tenant creation and setup through a support grant, unpublished, with no live bookings) and which steps the gate blocks. If that still doesn't fit, move the '10 pilots live' launch criterion, or the launch date, to a realistic point after the gate."
+    },
+    {
+      "id": "R3-6",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "An unconverted pilot stays Restricted for 90 days",
+      "problem": "Pilots need no payment method or mandate during the free period (Pilot Rules #4), but #6 expects them to pay a monthly hosting share from month 13. The design doesn't say when or how the payment method is collected (for example, required with the 60-day notice), or when the first charge is invoiced, given that billing is in arrears. Now that there is no plan to pick, 'unconverted pilot' is undefined. It could be a pilot that never pays its first charge, or any former pilot that misses a payment. That decides whether a pilot that pays month 13 and then misses a later month gets the 90-day Restricted period or the standard path.",
+      "remedy": "Define 'unconverted': for example, a pilot that has not paid its first post-free-year charge. State when and how the payment method or mandate is collected before month 13, when the first charge is invoiced and due, and which lifecycle applies to a former pilot that misses a later payment."
+    },
+    {
+      "id": "R3-7",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "1,000 SMS + WhatsApp notification messages per pilot per month",
+      "problem": "Persisting from R2-2. The design now says sign-in OTPs are exempt from the notification cap and have their own thresholds, but it still doesn't say whether a WhatsApp message followed by an SMS fallback (FR-PL-040) counts as one message or two. The same question applies to the OTP thresholds when the WhatsApp OTP channel falls back. The ₹1.8 lakh ceiling holds only if every message sent is counted.",
+      "remedy": "State that each message sent, including a fallback SMS, counts toward the notification cap and the OTP thresholds, or adjust the cost ceiling to allow for fallbacks."
+    },
+    {
+      "id": "R3-8",
+      "dimension": "completeness",
+      "severity": "blocking",
+      "changed_text": "During it the tenant is in the",
+      "problem": "Persisting from R2-3. Pilot Rules #4 puts the tenant in Active only 'during' the free hosting period. Under #3, that period starts at the first live publish on production. The tenant's state between being created on production and its first publish is still undefined. If it is Trial, the 14-day trial expiry, the subdomain-only publish rule, and noindex (FR-TW-008) apply, which could block or delay the first publish that starts the free year.",
+      "remedy": "State the pilot tenant's state from creation on production to first publish (for example, Active with a pilot flag, with the free-period end date set at first publish), and confirm that trial expiry and the trial publish restrictions don't apply."
+    },
+    {
+      "id": "R3-9",
+      "dimension": "feasibility",
+      "severity": "blocking",
+      "changed_text": "pilots move to production only after the cross-tenant isolation suite passes",
+      "problem": "Persisting from R2-1. The production entry gate now includes the isolation suite, the pen-test critical and high fixes, Razorpay Partner, the messaging approvals, and counsel review of the ToS and DPA. It still leaves out two items that the R2-1 remedy listed as the minimum and that 12 §4 requires before real customer data: verified backups and restore (12 §4: 'Backups, PITR and a full restore drill documented'), and counsel review of the privacy policy and refund policy that Cowos generates for tenants. The gate can pass as early as week 22, before the M6 DR drill.",
+      "remedy": "Add verified backups/PITR with a restore drill, and counsel review of the privacy policy and refund policy templates, to the production entry gate. Alternatively, record their omission as an accepted risk signed off by the owner."
+    },
+    {
+      "id": "R3-10",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": "SSPL charges each tenant only its share of the real AWS hosting cost",
+      "problem": "Several running costs fall outside the AWS bill: Razorpay fees on SSPL's own platform-billing collections, CPaaS/DLT and WhatsApp BSP fixed fees, Google Places/Maps and GST lookup API usage, the pen test, third-party SaaS (monitoring, help desk) and domains. The accepted risk in Premise 5 names only support and development, so it is unclear whether these costs are also unrecovered by design.",
+      "remedy": "List the non-AWS running costs. State whether they are excluded from the charge and carried by SSPL as part of the accepted risk, or passed through as additional disclosed lines."
+    },
+    {
+      "id": "R3-11",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": "The billing page shows the AWS bill breakdown behind the charge",
+      "problem": "Showing the AWS bill breakdown reveals SSPL's total platform cost and active tenant count to every tenant. If the breakdown is too granular, it could expose other tenants' usage. The design doesn't define what is shown.",
+      "remedy": "Define the breakdown's granularity (for example, monthly totals by service category plus the tenant count) and state that it never shows other tenants' individual usage."
+    },
+    {
+      "id": "R3-12",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": "Indicatively about ₹1,250–2,250 per tenant per month at 20 tenants",
+      "problem": "The indicative figure is the fixed base cost (₹25,000–45,000) divided by 20. It leaves out staging, if staging is in the pool, and variable costs. In the early months, with about 10–12 live tenants, a non-pilot would pay roughly ₹2,000–4,500 a month, more than the pack's Growth plan (₹2,499). The amount would also change every month as the tenant count and the AWS bill move, and the design doesn't mention this.",
+      "remedy": "Give the indicative charge at launch-time tenant counts, say whether the pool includes staging, and state how month-to-month changes are handled (for example, a cap, smoothing, or advance notice)."
+    },
+    {
+      "id": "R3-13",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "SSPL is alerted at 1,000 OTPs per pilot per month",
+      "problem": "Open Question 3 asks only about the 1,000-message notification cap. The new OTP alert and pause thresholds (1,000 and 2,000 per pilot per month) are equally provisional, and they drive most of the ₹1.8 lakh messaging ceiling.",
+      "remedy": "Extend Open Question 3 to cover the OTP thresholds, or mark them as provisional in Pilot Rules #5."
+    },
+    {
+      "id": "R3-14",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "If it isn't paid: 14-day grace",
+      "problem": "BRD §7.3 has a grace period of days 0–7 past due and Restricted on days 8–21. Pilot Rules #6 gives a 14-day grace. It is unclear whether the 14 days apply only to former pilots or to every tenant, and how they map onto the BRD's day counts.",
+      "remedy": "State that the 14-day grace is a pilot-specific exception (or a change for all tenants), and give the resulting day-by-day timeline."
+    },
+    {
+      "id": "R3-15",
+      "dimension": "completeness",
+      "severity": "minor",
+      "changed_text": "There are no paid tiers. Pilots, like every tenant, get the full feature set",
+      "problem": "With no tiers, the design doesn't say which limits FR-PL-061 still enforces (locations, bookable resources, staff seats, number of custom domains), or whether features the pack reserved for higher plans become available to every tenant. Examples are the Pro API and HTML embed, static apex IPs, priority support and the Dedicated cell.",
+      "remedy": "List any limits that remain for all tenants and the status of each feature the pack reserved for a higher plan."
+    },
+    {
+      "id": "R3-16",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "These change the pack, which must be updated to match",
+      "problem": "Persisting from R2-9. §3 and BRD §7 are now on the update list, but Premise 5 and Pilot Rules #4 also change pack text that isn't listed: FR-TW-008 ('until the first paid activation'), BRD §2 BO-2 and §4.4 BR-16/BR-26 ('flat subscription', 'on every plan'), FR-TA-150 ('Available on all plans'), FR-SA-020/021/024/040/051 (plans, subscriptions, wallet, themes per plan, MRR), FR-PL-040 (wallet debit), the 12 §2 platform-billing row ('Plans, trial, Razorpay Subscriptions'), the 01 Vision revenue goal, and risk R1 in 13.",
+      "remedy": "Add these items to the pack-update list at the top of Pilot Rules."
+    },
+    {
+      "id": "R3-17",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": "SSPL's support, onboarding and development work is never recovered from tenants",
+      "problem": "BR-05 defines assisted onboarding as a paid one-time service, which recovers onboarding work. The new consequence says onboarding work is never recovered, so it is unclear whether BR-05's paid service still exists for non-pilot tenants.",
+      "remedy": "State whether paid assisted onboarding (BR-05) is dropped or kept as a separate optional service, and update the wording to match."
+    },
+    {
+      "id": "R3-18",
+      "dimension": "completeness",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-6. Pilot Rules #7 still sets a billing-validation exit criterion without an owner, and without a fallback if the criterion is unmet when the first pilot's free year ends.",
+      "remedy": "Name the owner who checks the criterion and the fallback (delay conversion, extend the free period, or convert anyway)."
+    },
+    {
+      "id": "R3-19",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-7. The expansion gate still says 'open a second city', although non-pilot sign-ups are accepted in any city from launch. The gate measures pilot usage, not payment, and replaces HANDOFF.md's 'expand after 20 pay' trigger without saying so.",
+      "remedy": "Define what opening a city involves, and note that the gate measures usage rather than payment and replaces the earlier trigger."
+    },
+    {
+      "id": "R3-20",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-8. The 'roughly ₹0.25 per message' rate is still unsourced, and it now also prices up to 2,000 OTPs per pilot per month in the ₹1.8 lakh ceiling.",
+      "remedy": "Cite the source of the rate or label it an assumption, and split it by SMS and each WhatsApp category, including authentication."
+    },
+    {
+      "id": "R3-21",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-10. Pilot Rules #9 still says 'One named SSPL owner (PM or support lead)' with no person named. The PM is part of the 00 Q12 team, so the 15 person-days 'outside the core dev team' depends on who is chosen.",
+      "remedy": "Name the person, or the role and when they will be named, and confirm that their time does not come out of release-plan capacity."
+    },
+    {
+      "id": "R3-22",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-11. Pilots still receive assisted onboarding free, without a note that this is an exception to BR-05. Pilot setup also needs write access through FR-SA-030 grants, which are 'read-only by default'.",
+      "remedy": "Note the pilot exception to BR-05, and state that pilot support grants are write-enabled, with their scope and expiry."
+    },
+    {
+      "id": "R3-23",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-12. 'The pack's existing gate' is still quoted only as '10 pilots live'. The pack's gate also requires 'at least 5 with paid online bookings', which is harder to meet now that production entry is likely week 24.",
+      "remedy": "State whether 'at least 5 with paid online bookings' still applies at the week-24 launch."
+    },
+    {
+      "id": "R3-24",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-13. The second success criterion still says it 'matches goal G2', but it measures pilots at month 6 of the pilot, while G2 is measured across active tenants 12 months after launch.",
+      "remedy": "Describe it as a pilot-specific, earlier version of G2."
+    },
+    {
+      "id": "R3-25",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-14. 'The first 20 owners' still reads as first-come, first-served, while Open Question 2 asks how pilots are chosen. The Assignment still asks to 'Sign the first 5' without defining what signing means.",
+      "remedy": "Say whether pilots are first-come or selected, give interim criteria for the first 5, and define what signing a pilot means."
+    },
+    {
+      "id": "R3-26",
+      "dimension": "consistency",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-15, now narrowed. D1 is decided by Premise 5, but the Problem Statement and Premise 2 still present direct payment through the tenant's own Razorpay account as settled, while D3 remains Proposed (Open Question 5, Dependencies).",
+      "remedy": "Note that Premise 2 sets product direction and that D3 stays Proposed until the decision log is updated."
+    },
+    {
+      "id": "R3-27",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-16. The myHQ '25–30% per booking' figure still has no source link and rests on a single 2023 interview.",
+      "remedy": "Add the source link and say that it is one aggregator's reported rate, still to be confirmed in pilot interviews."
+    },
+    {
+      "id": "R3-28",
+      "dimension": "clarity",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-17. Demand Evidence still records '1–3 casual conversations', a range rather than a count, with no names or notes.",
+      "remedy": "Record the actual number of conversations, and the spaces and what each said, or state that no notes exist."
+    },
+    {
+      "id": "R3-29",
+      "dimension": "feasibility",
+      "severity": "minor",
+      "changed_text": null,
+      "problem": "Persisting from R2-18. Approach A is still rated 'Effort XL, risk medium-high' without referencing team-capacity risk R22 or the 12 §5 cut list. The re-scoped billing engine (variable cost-share charging) and the pilot work from week 18 add to the load.",
+      "remedy": "Reference R22, and say which cut-list items the owner accepts as the contingency if the week-24 date slips."
+    }
+  ],
+  "prior": [
+    {
+      "id": "R2-1",
+      "status": "persisting",
+      "evidence": "Pilot Rules #1 now defines a production entry gate (isolation suite, pen-test critical and high fixes, Razorpay Partner, DLT/WhatsApp/SES approvals, counsel review of the ToS and DPA). It still leaves out two items the remedy listed as the minimum: verified backups and restore, and counsel review of the privacy policy.",
+      "current_id": "R3-9"
+    },
+    {
+      "id": "R2-2",
+      "status": "persisting",
+      "evidence": "Pilot Rules #5 now exempts sign-in OTPs from the notification cap, gives them their own 1,000 alert and 2,000 pause thresholds with an email-OTP fallback, and restates the ceiling as ₹1.8 lakh. It still doesn't say whether a WhatsApp message plus its SMS fallback counts as one message or two, which the remedy required.",
+      "current_id": "R3-7"
+    },
+    {
+      "id": "R2-3",
+      "status": "persisting",
+      "evidence": "Pilot Rules #4 now puts the free period in the Active state, with publishing (FR-TA-041), custom domains and indexing (FR-TW-008) working as for a paying tenant. It still doesn't define the state from creation to first publish, which the remedy required, because the period starts at first publish (#3).",
+      "current_id": "R3-8"
+    },
+    {
+      "id": "R2-4",
+      "status": "resolved",
+      "evidence": "Pilot Rules #6 states that an unconverted pilot stays Restricted for 90 days instead of being suspended at day 22, and that only after those 90 days does the normal Suspended → retention → deletion lifecycle apply, with its notices (BRD §7.3 reminders at days 30, 60 and 80, with an export link). The undefined meaning of 'unconverted' is a new issue (R3-6).",
+      "current_id": null
+    },
+    {
+      "id": "R2-5",
+      "status": "resolved",
+      "evidence": "Pilot Rules #9 chooses the transition: staging in weeks 18–21 is a guided preview only, and each pilot is set up fresh on production at about 2 hours more per pilot. The onboarding owner runs the work from the staging preview through to production, and the budget is about 15 person-days across weeks 18–30.",
+      "current_id": null
+    },
+    {
+      "id": "R2-6",
+      "status": "persisting",
+      "evidence": "Pilot Rules #7 still sets the exit criterion with no owner and no fallback if it is unmet.",
+      "current_id": "R3-18"
+    },
+    {
+      "id": "R2-7",
+      "status": "persisting",
+      "evidence": "The expansion gate text in Target User & Narrowest Wedge is unchanged.",
+      "current_id": "R3-19"
+    },
+    {
+      "id": "R2-8",
+      "status": "persisting",
+      "evidence": "The pilot-year cost still uses 'roughly ₹0.25 per message' with no source, and now applies it to OTPs too.",
+      "current_id": "R3-20"
+    },
+    {
+      "id": "R2-9",
+      "status": "persisting",
+      "evidence": "The update list now includes 12 §3 and BRD §7, but still omits FR-TW-008 (identified under R2-3) and other text affected by Premise 5.",
+      "current_id": "R3-16"
+    },
+    {
+      "id": "R2-10",
+      "status": "persisting",
+      "evidence": "Pilot Rules #9 still reads 'One named SSPL owner (PM or support lead)' with no person named.",
+      "current_id": "R3-21"
+    },
+    {
+      "id": "R2-11",
+      "status": "persisting",
+      "evidence": "Pilot Rules #9 still uses FR-SA-030 grants for write setup, with no note of the BR-05 exception and no write scope or expiry.",
+      "current_id": "R3-22"
+    },
+    {
+      "id": "R2-12",
+      "status": "persisting",
+      "evidence": "Pilot Rules #1 still quotes only '10 pilots live at the week-24 launch (the pack's existing gate)' and doesn't say whether 'at least 5 with paid online bookings' applies.",
+      "current_id": "R3-23"
+    },
+    {
+      "id": "R2-13",
+      "status": "persisting",
+      "evidence": "Success Criteria still says '(matches goal G2 in 01-product-vision-and-scope.md)'.",
+      "current_id": "R3-24"
+    },
+    {
+      "id": "R2-14",
+      "status": "persisting",
+      "evidence": "Target User still says 'the first 20 owners', and The Assignment still says 'Sign the first 5' without defining signing.",
+      "current_id": "R3-25"
+    },
+    {
+      "id": "R2-15",
+      "status": "persisting",
+      "evidence": "D1 is now decided by Premise 5, but the Problem Statement and Premise 2 still present tenant-direct Razorpay payment as settled while D3 stays Proposed.",
+      "current_id": "R3-26"
+    },
+    {
+      "id": "R2-16",
+      "status": "persisting",
+      "evidence": "Status Quo still cites 'A 2023 founder interview reports myHQ takes 25–30% per booking' with no link.",
+      "current_id": "R3-27"
+    },
+    {
+      "id": "R2-17",
+      "status": "persisting",
+      "evidence": "Demand Evidence still reads '1–3 casual conversations with coworking owners'.",
+      "current_id": "R3-28"
+    },
+    {
+      "id": "R2-18",
+      "status": "persisting",
+      "evidence": "Approach A still reads 'Effort XL, risk medium-high' with no reference to R22 or the cut list.",
+      "current_id": "R3-29"
+    }
+  ]
+}

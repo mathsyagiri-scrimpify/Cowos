@@ -1,26 +1,27 @@
 # 09 · Data Model
 
-> Cowos requirements pack · v0.1 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
+> Cowos requirements pack · v0.2 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
 
 ## 1. Entity overview by module
 
 | Module | Entities |
 |--------|----------|
 | Tenancy | Tenant, TenantSettings, TenantStateHistory, Cell (tenant catalog) |
-| Identity | TenantUser, TenantUserRole, TenantUserLocation, Customer, CustomerIdentity (phone/email), OtpChallenge, PlatformUser |
-| Sites | Theme, ThemeVersion, Site, SiteDraft, SiteVersion, Page, MediaAsset, MediaVariant |
+| Identity | TenantUser, TenantUserRole, TenantUserLocation, TenantUserInvitation, Customer, CustomerIdentity (phone/email), OtpChallenge, PlatformUser |
+| Sites | Theme, ThemeVersion, Site, SiteDraft, SiteVersion, Page, MediaAsset, MediaVariant, EdgeSync (`edge_sync` outbox) |
 | Domains | Domain, DomainVerification, CertificateStatus |
 | Inventory | Location, OperatingHours, Holiday, Amenity, LocationAmenity, Product, ProductUnit (Resource), PriceRule, AddOn, AvailabilityRule, MaintenanceBlock, TourSlotRule |
-| Booking | Booking, BookingAllocation, BookingAddOn, BookingEvent, DayCapacityLedger, CheckIn |
+| Booking | Booking, BookingAllocation, BookingAddOn, BookingEvent, DayCapacityLedger, CheckIn, BookingPass, CheckInCode |
 | Policies | CancellationPolicy, CancellationTier, PolicyDocument |
 | Payments | PaymentGatewayAccount, PaymentOrder, Payment, Refund, OfflinePayment, WebhookEvent |
 | Invoicing | InvoiceSeries, Invoice, InvoiceLine, CreditNote, CreditNoteLine, TaxProfile |
 | CRM | Company, CompanyMember, Lead, LeadActivity, Tour, Note, ConsentRecord, DataRightsRequest, SecurityDeposit |
 | Memberships (P2) | MembershipPlan, Membership, CreditLedgerEntry |
 | Promotions | Coupon, CouponRedemption |
-| Notifications | NotificationTemplate, NotificationMessage, MessagingWallet, WalletTransaction |
-| Platform billing | PlatformPlan, PlatformPlanVersion, PlatformSubscription, PlatformInvoice, PlatformPayment, UsageRecord |
-| Audit & support | AuditEvent, SupportGrant, SupportTicketRef |
+| Notifications | NotificationTemplate, NotificationMessage, MessagingWallet, WalletTransaction, PilotMessagingUsage |
+| Platform billing (P1-B) | BillingProfile, CostPool, TenantCostShare, HostingInvoice, AdjustmentLine, PlatformPayment, UsageRecord. PlatformPlan, PlatformPlanVersion, PlatformSubscription and PlatformInvoice: Removed in v0.2 (D1, R2) |
+| Platform admin | PilotRequest (platform schema, outside tenant RLS) |
+| Audit & support | AuditEvent, SupportGrant, PreHandoverGrant, SupportTicketRef |
 
 ## 2. Core relationships
 
@@ -33,7 +34,9 @@ erDiagram
     TENANT ||--o{ CUSTOMER : serves
     TENANT ||--o{ COMPANY : bills
     TENANT ||--o{ PAYMENT_GATEWAY_ACCOUNT : connects
-    TENANT ||--|| PLATFORM_SUBSCRIPTION : pays
+    TENANT ||--o| BILLING_PROFILE : "pays via (P1-B)"
+    TENANT ||--o{ HOSTING_INVOICE : "billed (P1-B)"
+    TENANT ||--o{ EDGE_SYNC : "queues edge updates"
     TENANT }o--|| CELL : "placed in"
 
     SITE }o--|| THEME_VERSION : uses
@@ -75,8 +78,10 @@ erDiagram
     LEAD ||--o{ TOUR : schedules
     LEAD }o--o| CUSTOMER : converts_to
 
-    PLATFORM_SUBSCRIPTION }o--|| PLATFORM_PLAN_VERSION : on
-    PLATFORM_SUBSCRIPTION ||--o{ PLATFORM_INVOICE : bills
+    COST_POOL ||--o{ TENANT_COST_SHARE : "split into"
+    TENANT_COST_SHARE |o--o| HOSTING_INVOICE : "invoiced on"
+    HOSTING_INVOICE ||--o{ ADJUSTMENT_LINE : carries
+    BOOKING ||--o| BOOKING_PASS : "shown as"
     TENANT ||--|| MESSAGING_WALLET : funds
 ```
 
@@ -94,17 +99,26 @@ erDiagram
 | gstin | text null | Validated format + checksum; unique among active tenants |
 | pan | text null | |
 | state_code | char(2) | From GSTIN or address; drives tax |
-| state | enum | Trial, Active, PastDue, Restricted, Suspended, SuspendedByAdmin, Expired, Cancelled, PendingDeletion, Deleted |
-| trial_ends_at, state_changed_at | timestamptz | |
-| goal | enum | FullSite, BookingOnly |
+| state | enum | Trial, Active, PastDue, Restricted, Suspended, SuspendedByAdmin, Expired, Cancelled, PendingDeletion, Deleted. At launch the state machine rejects any move into Trial, PastDue or Restricted with 409; the Billing release enables them (Q1, P1-B) |
+| trial_ends_at, state_changed_at | timestamptz | trial_ends_at used from P1-B (14-day trial for non-pilots) |
+| is_pilot | bool | Pilot flag. Pilots are created by Super Admin directly in Active; trial expiry and trial publish restrictions never apply (Pilot Rules #4, F-C2) |
+| free_period_ends_at | timestamptz null | Set at the tenant's first live publish on production: 12 months later (Pilot Rules #3, F-C2) |
+| unconverted_restricted_until | timestamptz null | End of the 90-day Restricted hold for an unconverted pilot; after it the normal Suspended lifecycle applies (Pilot Rules #6, F-C2) |
+| data_seq | bigint | Increments in the same transaction as every website-visible data change (inventory names, prices, hours) and every tenant state change; compared by data-refresh renders (R18) |
+| first_online_booking_at | timestamptz null | Set atomically with the first paid online booking confirmation, so the first-booking message sends once (14A, F-RR-C2) |
+| goal | enum | FullSite, BookingOnly (booking-only path from P1-B, CEO-S2) |
 | cell_id | uuid | Tenant catalog (pool-1 by default) |
 | kyc_status | enum | NotStarted, Pending, Verified, Rejected |
 | first_publish_approved_at | timestamptz null | |
-| referral_code, referred_by_code, utm | text / jsonb | |
+| referral_code, referred_by_code, utm | text / jsonb | Captured from P1-B with public sign-up (FR-MW-006, CEO-S1) |
 | timezone | text | Default `Asia/Kolkata` |
 | currency | char(3) | Default INR |
 
+Pilot state transitions (F-C2): created by Super Admin → Active with `is_pilot`; first live publish sets `free_period_ends_at`; free-period end → stays Active and pays its hosting share from month 13 (P1-B); first post-free-year invoice unpaid by due date + 14 days → Restricted with `unconverted_restricted_until` = 90 days later. Each transition has a test.
+
 **TenantUser**: id, tenant_id, email (citext), phone, name, password_hash, mfa_secret (encrypted), mfa_enabled, role (Owner, Manager, Staff), status, last_login_at. **TenantUserLocation**: tenant_user_id, location_id (scope).
+
+**TenantUserInvitation** (FR-TA-172; also the pilot Owner invite, CEO-A2): id, tenant_id, email, phone, role (Owner, Manager, Staff), location_ids, token_hash, invited_by (tenant user or platform user), expires_at (72 hours after send for the Owner invite), accepted_at null, revoked_at null (a resend revokes the previous invitation). Single use. At most one open Owner invitation per tenant.
 
 **Customer** (per tenant): id, tenant_id, name, phone_e164, email, gstin, billing_address (jsonb), marketing_consent (derived from latest ConsentRecord), status (Active, Blocked, Anonymised), created_via (Online, Staff, Import), last_activity_at. Unique (tenant_id, phone_e164) and (tenant_id, email) where not null.
 
@@ -114,9 +128,11 @@ erDiagram
 
 ### 3.2 Sites and domains
 
-**Theme / ThemeVersion**: theme key, name, version (semver), package reference, content JSON schema, supported sections, plans allowed, status (Active, Deprecated).
+**Theme / ThemeVersion**: theme key, name, version (semver), package reference, content JSON schema, supported sections, booking shell chunk reference (16A, R13), status (Hidden, Active, Deprecated). Every theme is available to every tenant; there are no plans (D1). Hidden keeps a new theme out of the catalog until its Lighthouse, axe and screen reader checks pass (CEO-S3).
 
-**Site**: id, tenant_id, theme_version_id, live_version_id null, booking_placement (Subdomain, Path), branding (jsonb: logo asset ids, colours, font pair, button shape, mode).
+**Site**: id, tenant_id, theme_version_id, live pointer (`live_version_id` null, `live_data_seq` null), booking_placement (Subdomain, Path), branding (jsonb: logo asset ids, colours, font pair, button shape, mode). The pointer changes only at the render switch step: owner publish and rollback set it (blocked while Suspended); a data refresh sets it only if `live_version_id` is unchanged and its `data_seq` is higher than `live_data_seq` (CEO-A1, CEO-A3, R18). Every pointer change adds an EdgeSync row in the same transaction (R17).
+
+**EdgeSync** (`edge_sync` outbox, R17): id, tenant_id, reason (Publish, Rollback, DataRefresh, StateChange, Domain, PilotCreated), enqueued_at, sent_at null. Added in the same transaction as every change to a tenant's live pointer, state or hostnames. The single EdgeSyncWorker reads unsent rows, then reads the tenant's current pointer and state from the DB and writes them to KVS; it marks the rows sent. Partial index on `enqueued_at` WHERE `sent_at IS NULL`; alert when the oldest unsent row is older than 2 minutes.
 
 **SiteDraft**: site_id, content (jsonb, theme-independent sections), updated_at, updated_by, revision (optimistic concurrency).
 
@@ -149,6 +165,7 @@ erDiagram
 | cancellation_policy_id, request_sla_hours | |
 | security_deposit_amount | Monthly products |
 | convenience_fee_type, convenience_fee_value | Optional tenant fee (None, Flat, Percent); goes to the tenant |
+| is_sample | Demo inventory labelled "Sample"; pre-publish checks block publishing while any sample item remains (4A, F-RR-C2; P1-B with demo inventory, CEO-S2) |
 
 **ProductUnit** (Resource): id, tenant_id, product_id, label ("Cabin 3", "D-12"), capacity, floor, zone, floor_plan_x/y (P2), status (Active, Maintenance, Retired).
 
@@ -205,6 +222,10 @@ ALTER TABLE booking_allocation
 **BookingEvent**: booking_id, type (Created, Held, PaymentStarted, Paid, Confirmed, Rescheduled, Cancelled, RefundIssued, CheckedIn, NoShow, NotificationSent), actor (customer/staff/system/support), data (jsonb), at.
 
 **CheckIn**: booking_id, checked_in_at, method (QR, Manual, Self), by_user_id.
+
+**BookingPass** (desk pass link, 17A, R10): id, tenant_id, booking_id, token_hash, purpose (`pass`), expires_at (booking end), revoked_at null (set on cancel or reschedule). The link token is opaque, carries no personal data and is HMAC-bound to booking id + purpose. The pass page shows only first name + last initial, date/time, room and tenant logo.
+
+**CheckInCode** (QR on the pass, R10): id, tenant_id, booking_id, code_hash, expires_at (short-lived). Separate from the pass token. The front desk scan validates it against the scanning tenant only.
 
 ### 3.5 Policies
 
@@ -266,23 +287,51 @@ ALTER TABLE booking_allocation
 
 **NotificationMessage**: id, tenant_id, recipient (customer/user id + masked address), event, channel, template_id, status (Queued, Sent, Delivered, Read, Failed), provider_message_id, cost, error, related_entity, created_at.
 
-**MessagingWallet**: tenant_id, balance. **WalletTransaction**: tenant_id, amount (+top-up / −usage), message_id null, platform_invoice_id null, at.
+**MessagingWallet**: tenant_id, balance, funded_by (Tenant, SsplPilot). Messaging is charged at provider cost with no free allowance; pilots use an SSPL-funded wallet (Pilot Rules #4, #10). Floors (R4): a notification debit needs `balance - cost >= 0`; a sign-in OTP debit needs `balance - cost >= -500` (₹). Each send runs one conditional `UPDATE messaging_wallet SET balance = balance - :cost WHERE tenant_id = :t AND balance - :cost >= :floor RETURNING balance`; if no row returns, the notification goes by email only, or the OTP falls back to email OTP. `CHECK (balance >= -500)`.
 
-### 3.11 Platform billing
+**WalletTransaction**: tenant_id, amount (+top-up / −usage), kind (TopUp, Notification, Otp, Adjustment), message_id null, top_up_payment_id null, at. Written in the same transaction as the wallet debit (R4). Non-pilot top-up from P1-B (CEO-S1).
 
-**PlatformPlan / PlatformPlanVersion**: plan key (Starter, Growth, Pro, Dedicated), version, monthly_price, annual_price, limits (jsonb: locations, resources, staff, custom_domains, pages), features (jsonb flags), effective_from.
+**PilotMessagingUsage** (Pilot Rules #5): tenant_id, month (IST), notifications_sent, otps_sent, notification_cap_reached_at null, otp_alert_sent_at null, phone_otp_paused_at null. Caps: 1,000 SMS + WhatsApp notifications per month, then email only and an SSPL alert; OTP alert at 1,000, phone OTP paused at 2,000 for the rest of the month. Every message sent counts, including a fallback SMS.
 
-**PlatformSubscription**: id, tenant_id, plan_version_id, cycle (Monthly, Annual), status (Trialing, Active, PastDue, Cancelled), current_period_start/end, cancel_at_period_end, gateway_subscription_id/mandate_ref, discount (jsonb).
+### 3.11 Platform billing (P1-B)
 
-**PlatformInvoice**: id, tenant_id, number (`CW/26-27/000123`), period, lines (plan, proration, wallet top-up), tax split by SSPL state vs tenant state, total, status, due_at, paid_at, pdf_key. **PlatformPayment**: invoice_id, provider ids, amount, status.
+There are no plans or subscriptions. Each tenant pays its share of the production AWS bill plus messaging at cost (D1, Pilot Rules #10). Launch carries none of these tables; the Billing release adds them as additive migrations and backfills a BillingProfile for every existing tenant (pilots with their free-period end date, SSPL test and demo tenants) (R2).
 
-**UsageRecord**: tenant_id, metric (Messages, StorageGB, Bookings, ApiCalls), period, quantity (for cost-to-serve and plan limits; bookings never billed).
+**PlatformPlan / PlatformPlanVersion**: Removed in v0.2 (no plans, prices, limits or feature tiers; every tenant gets every feature; D1, R2).
+
+**PlatformSubscription**: Removed in v0.2 (no subscriptions; replaced by BillingProfile and HostingInvoice; D1, R2).
+
+**PlatformInvoice**: Removed in v0.2 (replaced by HostingInvoice; R2).
+
+**BillingProfile**: id, tenant_id (unique), billing contact email, GSTIN snapshot for the invoice, payment_method (PaymentLink, UpiAutopay, EMandate), mandate_ref null, mandate_max_amount null (at most ₹5,000; RBI pre-debit notice applies), paid_by_sspl (bool: SSPL test and demo tenants), status. A pilot adds a payment method with the 60-day notice (Pilot Rules #6); a non-pilot becomes Active when it adds one at the end of its trial (Pilot Rules #7).
+
+**CostPool**: id, month, aws_bill_invoice_id null (CUR 2.0 `bill_invoice_id`; null until AWS marks the bill final), gross_cost, credits, net_cost, service_breakdown (jsonb: cost by service category), counted_tenant_days, status (Pending, Held, Final), estimate_low, estimate_high, estimate_as_of (R15: month-to-date pool plus a straight-line projection to month end, divided by today's counted tenants; high = projection + 15% buffer), computed_at. Unique (month). Net of AWS credits; production account only (R1, R2).
+
+**TenantCostShare**: id, cost_pool_id, tenant_id, tenant_days (days in Active, PastDue or Restricted in the month), share_amount (= net_cost × tenant_days / counted_tenant_days), payer (Tenant, SsplTestDemo, SsplPilot), hosting_invoice_id null. Pilot shares in the free period and SSPL test/demo shares are recorded and absorbed by SSPL; no ₹0 invoice is issued. Unpaid shares are absorbed by SSPL, never passed to other tenants. Unique (cost_pool_id, tenant_id).
+
+**HostingInvoice**: id, tenant_id, number (`CW/26-27/000123`), month, share_amount, adjustment_total, taxable_value, cgst, sgst, igst (SSPL state vs tenant state), total, status (Held, Issued, Paid, Overdue, Void), issued_at (10th of the next month), due_at (issued_at + 10 days), paid_at, payment_link_ref, pdf_key. Immutable after issue like tenant invoices.
+
+**AdjustmentLine**: id, hosting_invoice_id, for_month, cost_pool_id, amount (+/−), reason (AwsCredit, AwsRefund, AwsSupportFee, AwsCorrection), created_at. Written when the billing job re-reads the prior month and finds AWS changed it after invoicing (R1).
+
+**PlatformPayment**: hosting_invoice_id, provider ids, method (PaymentLink, UpiAutopay, EMandate), amount, status.
+
+**UsageRecord**: tenant_id, metric (Messages, StorageGB, Bookings, ApiCalls), period, quantity (for cost-to-serve and the later review of a weighted split, R9; nothing here is billed; bookings never billed). Media fair use is 10 GB per tenant with no extra charge in v1 (Pilot Rules #10).
+
+**Pricing JSON** (file, not a table; R12): written after each billing run with the per-space average share for last month and the two before it. It never contains the total AWS bill, the tenant count or any tenant's data.
+
+### 3.11A Platform admin
+
+**PilotRequest** (Book-a-demo form, CEO-A2): id, name, phone_e164, email, space_name, city, seats, aggregators_used, message (plain text, ≤ 2,000 characters), status, notify_status (Pending, Sent, Failed), ip_hash, created_at, updated_at. Platform schema, outside tenant RLS, readable only by the Super Admin role. Saved before sales is notified through the email outbox. A second request from the same phone within 24 hours updates the existing row and sends one notification. Retained 12 months.
+
+Pilot scorecard (CEO-A4, R20): computed on demand, not stored. A paid online booking is customer-made in the booking app (`source = Online`), has a captured payment and is not fully refunded; staff-created and offline bookings are excluded. It counts in the month its payment was captured, in Asia/Kolkata time; a later full refund removes it from that month and past months recompute. The page shows "as of <time>".
 
 ### 3.12 Audit and support
 
 **AuditEvent** (append-only): id, tenant_id null (platform events), actor_type, actor_id, impersonated_by null, action (e.g. `pricing.updated`, `refund.override`), entity_type, entity_id, before (jsonb), after (jsonb), ip, user_agent, at. Partitioned by month.
 
-**SupportGrant**: id, tenant_id, requested_by (platform user), ticket_ref, reason, access (ReadOnly, ReadWrite), status (Requested, Approved, Denied, Revoked, Expired), approved_by (tenant user), starts_at, expires_at.
+**SupportGrant**: id, tenant_id, requested_by (platform user), ticket_ref, reason, access (ReadOnly, ReadWrite), status (Requested, Approved, Denied, Revoked, Expired), approved_by (tenant user), starts_at, expires_at. Tenant-approved; applies after handover (R19).
+
+**PreHandoverGrant** (R19): id, tenant_id (unique), created_by (platform user), created_at (with Create pilot), access (ReadWrite), status (Active, Ended), ended_at, end_reason (OwnerAccepted, Published, LivePayment). Valid only while the tenant has no Owner, is unpublished and has no live payments; every request re-checks these conditions, and writes are rejected once any fails. It ends automatically when the Owner accepts the invite. Every write under it is an AuditEvent with `impersonated_by` set, and the first-login handoff screen lists those events (11A).
 
 ## 4. Data rules and constraints
 
@@ -297,5 +346,13 @@ ALTER TABLE booking_allocation
 | Policy at time of booking applies | `cancellation_policy_snapshot` on booking |
 | Price at time of booking applies | `price_snapshot` on booking |
 | Hostnames unique across platform | Unique index on `domain.hostname` where status ≠ Removed |
-| Soft delete for configuration | `archived_at` on products, units, coupons, plans (referenced by history) |
+| Soft delete for configuration | `archived_at` on products, units, coupons, membership plans (referenced by history) |
 | Hard delete / anonymise for personal data | Erasure job replaces personal fields with tokens; keeps financial records with masked buyer details unless law needs them |
+| Tenant isolation fails closed | RLS policies use `current_setting('app.tenant_id', true)`; `FORCE ROW LEVEL SECURITY` on every tenant table; the tenant is set as the first statement of each explicit transaction (R3) |
+| Sweeps find work across tenants without reading data | `cowos_sweeper` role with read-only policies exposing only `(id, tenant_id)` of matching rows (R8), served by partial indexes: `booking(hold_expires_at) WHERE status = 'Held'`; `booking(starts_at) WHERE status IN ('Confirmed','AwaitingPayment')`; `booking(ends_at) WHERE status = 'Confirmed'`. An integration test asserts each sweep's query plan uses its index (R7) |
+| Wallet never passes its floor | Conditional `UPDATE` with the floor in the `WHERE` clause and the WalletTransaction in the same transaction; `CHECK (balance >= -500)` (R4) |
+| Newest website data stays live | `tenant.data_seq` bumped in the same transaction as every website-visible data change and every tenant state change; pointer `(live_version_id, live_data_seq)` compared at the switch (R18) |
+| Edge equals DB | `edge_sync` row in the same transaction as every pointer, state or hostname change; partial index on unsent rows (R17) |
+| Pass tokens are purpose-bound | Unique `booking_pass.token_hash`; lookup requires purpose `pass`, not expired, not revoked, same tenant (R10) |
+| One hosting share per tenant per month | Unique `(cost_pool_id, tenant_id)` on `tenant_cost_share`; unique `month` on `cost_pool` (P1-B) |
+| Scorecard query | Index on payments `(tenant_id, captured_at)` filtered to captured payments of online bookings (R20) |

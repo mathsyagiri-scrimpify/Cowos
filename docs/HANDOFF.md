@@ -11,6 +11,7 @@
 | Requirements pack (13 deliverables + start-here) | `docs/requirements/` (index: `docs/requirements/README.md`) |
 | Original brief from the product owner (verbatim) + later clarifications | `docs/original-brief.md` |
 | Requirements pack commit | `c030982` "Add initial documentation for Cowos requirements pack". Includes the promo-code and "0% commission" clarifications |
+| Approved design doc + all review results (office-hours, eng x3, design, CEO) | `docs/designs/cowos-platform-v1.md`; deferred work in `TODOS.md` |
 | This handoff note | `docs/HANDOFF.md` (committed together with `docs/original-brief.md` and `CLAUDE.md` in the handoff commit) |
 | Context file Claude Code loads automatically | `CLAUDE.md` at the repo root (points here) |
 
@@ -24,7 +25,7 @@ Nothing else is needed from the previous machine. The `.claude/worktrees/...` fo
 
 1. **Requirements pack v0.1** covering all 13 requested deliverables: vision, personas and permissions, BRD, SRS (~200 numbered FRs with MoSCoW), user stories (Given/When/Then), flows (Mermaid), NFRs, architecture, data model, API modules, integrations, release plan, risks and decisions.
 2. **12 recommended changes to the original brief** are in `00-start-here.md` §2. The biggest:
-   - flat plans instead of "server cost only" pricing
+   - flat plans instead of "server cost only" pricing (superseded: D1 decided hosting cost only, see §3)
    - shared multi-tenant platform instead of one EC2 per tenant
    - pre-rendered tenant websites
    - each tenant's own Razorpay account instead of Razorpay Route
@@ -33,12 +34,14 @@ Nothing else is needed from the previous machine. The `.claude/worktrees/...` fo
    - three booking modes (instant, request, enquire/tour)
 3. **Product owner clarifications already applied:**
    - **0% commission means Cowos takes no share of the tenant's booking revenue.** What the tenant charges its own customers (prices, promo codes, discounts, optional convenience fee, deposits) is the tenant's decision. See `00` §C1, BR-14, BR-25.
-   - **Tenants create their own promo codes** in the Tenant Admin on every plan, as an MVP must. See FR-TA-150/156/157/159, FR-BA-016, US-4.5, BR-26.
+   - **Tenants create their own promo codes** in the Tenant Admin, as an MVP must (every tenant gets every feature; there are no plans). See FR-TA-150/156/157/159, FR-BA-016, US-4.5, BR-26.
    - Added an optional tenant convenience fee (FR-TA-071, off by default). **Not explicitly approved yet:** confirm with the product owner or remove it.
 
 ## 3. What is NOT decided yet
 
-All decisions in `docs/requirements/13-risks-open-questions-decisions.md` §3 (D1–D16) are still **Proposed**. None has been approved. The six that block engineering: D1 pricing model, D2 hosting model, D3 payment model, D4 domains, D5 badge text, D6 database tenancy strategy.
+**D1 (pricing) was decided on 2026-11-02:** SSPL charges tenants only their share of the real AWS hosting cost, plus messaging at cost. There is no subscription, no plan fee and no commission. See `docs/designs/cowos-platform-v1.md`, Premise 5 and Pilot Rules #10. This reverses the pack's recommendation C1. **The pack was updated to v0.2 on 2026-11-03** to match the design doc: hosting cost only, the pilot rules, the CEO review deferrals and the eng/design review decisions.
+
+The other decisions in `docs/requirements/13-risks-open-questions-decisions.md` §3 (D2–D16) are still **Proposed**. The five that block engineering: D2 hosting model, D3 payment model, D4 domains, D5 badge text, D6 database tenancy strategy.
 
 Open questions OQ1–OQ15 in the same file are also unanswered. The pack uses the default assumptions listed there.
 
@@ -53,9 +56,26 @@ Exact position:
 | `/office-hours` Phase 1 (context), goal, stage | Done (see 4.1) |
 | Phase 2A forcing questions (Q2 status quo, Q4 wedge; Q5 skipped as nothing to observe yet) | Done (see 4.1) |
 | Phase 2.75 landscape search | Done (see 4.3) |
-| Phase 3 premises | **Next.** The question call failed with a tool error, so the four premises in 4.4 have no answers |
-| Phase 3.5 second opinion, Phase 4 alternatives, design doc | Not started |
-| `/plan-ceo-review` Step 0 (premise challenge, mode selection) and the 11-section review | Not started. Nothing was written to `~/.gstack` design docs or review logs on the previous machine |
+| Phase 3 premises | Done on 2026-11-02 (outcomes in 4.5) |
+| Phase 3.5 second opinion | Skipped by the product owner |
+| Phase 4 alternatives | Done. Owner chose **Approach A: full MVP as specified** |
+| Design doc | **Approved 2026-11-02:** `docs/designs/cowos-platform-v1.md`. Spec review ran 3 rounds (quality 5 → 7 → 6). The last 9 blocking fixes are applied but no reviewer re-checked them, and 20 minor concerns are recorded in the doc |
+| `/plan-eng-review` | Done 2026-11-03 (first review: 39 findings → tasks T1-T10) |
+| `/plan-design-review` | Done 2026-11-03 (score 1 → 6/10, 33 decisions; **6 design gaps still open**) |
+| `/plan-eng-review` re-review after design | Done 2026-11-03 (26 findings → RT1-RT9) |
+| `/plan-ceo-review` (SCOPE REDUCTION) | Done 2026-11-03: billing automation, self-serve sign-up and the wizard move to a **Billing release at launch + 4 months**; 2 themes at launch, themes 3-4 six weeks later; added suspended page, render race guard, hardened demo form, pilot scorecard, cost-recovery goal (CT1-CT9) |
+| `/plan-eng-review` re-review 2 after CEO | Done 2026-11-03: one PilotProgramService, single EdgeSyncWorker for CloudFront KVS, data_seq ordering, pre-handover setup grant, scorecard month rule (ET1-ET7) |
+| Requirements pack update (T9, DT8, CT1, ET7) | Done 2026-11-03: pack v0.2 |
+
+### 4.5 Outcomes on 2026-11-02 (superseding 4.4)
+
+- **Premise 1 (revised):** cover both pains, aggregator commission and admin work.
+- **Premise 2 (agreed):** the USP is own brand + direct payment + 0% commission, not "cheap + GST".
+- **Premise 3 (owner's decision):** build the complete suite regardless of demand evidence. Recorded as an accepted risk.
+- **Premise 4 (agreed, changed):** one beachhead city; the first 20 owners pilot **fully free for one year**.
+- **Premise 5 (owner's decision):** hosting cost only (D1, see §3).
+- **Pilot rules:** 10 rules covering the production gate, free-year start, billing state, messaging caps, the end of the free year and how the hosting charge is calculated and collected. See the design doc's Pilot Rules.
+- **Assignment:** sign the first 5 pilot spaces and record their booking channels, volumes and aggregator fees (§5 interview fields).
 
 ### 4.1 Answers already given by the product owner
 
@@ -79,7 +99,7 @@ Exact position:
 - [Spacebring argues](https://www.spacebring.com/blog/coworking-software-where-uk-operators-still-lose-time) operators mostly have a workflow problem, not a software problem.
 - **Insight:** competitors sell operations software. The unclaimed angle is "stop paying 25–30% for customers you already earned", which is the Directoo model. That suggests leading with direct booking and commission recovery.
 
-### 4.4 Premises waiting for the product owner's agree/disagree (not yet asked successfully)
+### 4.4 Premises as first drafted (superseded by 4.5; kept for history)
 
 1. The pain owners will pay to fix is losing 25–30% to aggregators on bookings they could take directly. Admin work is second-order and already targeted by existing tools.
 2. "Cheap + GST" is not the USP. The USP is "your own branded website + booking app, customers pay you directly, 0% commission".
@@ -93,7 +113,7 @@ Exact position:
    git clone https://github.com/mathsyagiri-scrimpify/Cowos.git
    ```
 2. Claude Code loads `CLAUDE.md` automatically, which points it here. To be explicit, ask it to read `docs/HANDOFF.md`, `docs/original-brief.md` and `docs/requirements/00-start-here.md`.
-3. Resume the strategy review: run `/office-hours` and say "resume from docs/HANDOFF.md §4: ask the four premises in §4.4, then continue to alternatives and write the design doc". After the design doc exists, run `/plan-ceo-review`, then `/plan-eng-review`.
+3. The pack (v0.2) and the design doc are reviewed and in step. Open product questions from the pack update: BR-05 paid assisted onboarding (OQ12), the OQ3 refund default for hosting invoices, dedicated-cell charging (OQ20), a custom-domain limit without plans, whether a pilot can be booking-only at launch (FR-TA-006 is P1-B), what a pilot's billing page shows at launch, "Cancelled: live until period end" under arrears billing, and the FR-MW-008 priority raise (S → M). Also still open: the 6 design gaps and how EdgeSyncWorker reads `edge_sync` under RLS (platform schema or a narrow role).
 4. Get the product owner's answers on decisions D1–D6 (`13-risks-open-questions-decisions.md`), then update the decision log status column.
 5. Start the long-lead approvals as soon as D3/D4 are decided: Razorpay Partner application, TRAI DLT registration, WhatsApp templates, SES production access, buying domains.
 
@@ -115,4 +135,5 @@ Add the results to a new `docs/research/owner-interviews.md` before changing the
 - gstack is installed per machine (`~/.claude/skills/gstack`). Your telemetry, learnings and decision logs live in your own `~/.gstack/`, and none of the previous session's local preferences carry over. Expect the first-run prompts again.
 - The repo also contains a vendored copy at `.claude/skills/gstack/`, which gstack marks as deprecated. Decide whether to keep it, or move to team mode (`gstack-team-init`) and stop vendoring.
 - On the previous Windows machine, `gstack-skill-start` took over 2 minutes. If a skill preamble times out, rerun it with a longer timeout.
-- A gstack upgrade (v1.91.93 → v1.91.332) was available but not applied (blocked by permission settings). Run `/gstack-upgrade` if you want it.
+- A gstack upgrade (v1.91.93 → v1.94.8) was available but not applied (blocked by permission settings). Run `/gstack-upgrade` if you want it.
+- On that machine Codex, jq and an OpenAI key were not set up, so outside-voice reviews, /autoplan task JSONL and design mockups were skipped.

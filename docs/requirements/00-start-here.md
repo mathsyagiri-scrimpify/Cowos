@@ -1,12 +1,16 @@
 # 00 · Start Here: Questions, Assumptions, and What I'd Change
 
-> Cowos requirements pack · Version 0.1 (draft) · Owner: SSPL Product · Date: 2026-10-30
+> Cowos requirements pack · Version 0.2 (draft) · Owner: SSPL Product · Date: 2026-11-03
 
-This pack has 13 deliverables (files `01` to `13`). Read this file first. It holds three things:
+This pack has 13 deliverables (files `01` to `13`). Read this file first. It holds five things:
 
 1. Clarifying questions, each with the assumption the rest of the pack uses if you don't answer.
 2. Changes I recommend to the original brief, with the reasoning. Several are significant.
 3. The decisions you need to make before engineering starts.
+4. The pilot programme (decided 2026-11-02).
+5. The release phases, including the Billing release (P1-B).
+
+v0.2 applies the approved design doc `docs/designs/cowos-platform-v1.md` (Premises, Pilot Rules #1–#10, design decisions 1A–33A, engineering and CEO review decisions).
 
 ---
 
@@ -14,11 +18,11 @@ This pack has 13 deliverables (files `01` to `13`). Read this file first. It hol
 
 | # | Question | Assumption used in this pack (if you don't answer) |
 |---|----------|------------------------------------------------------|
-| Q1 | Who is the beachhead customer? Metro operators (Bengaluru, Hyderabad, Pune) or Tier-2/3 spaces? | Small and mid-size independent spaces (1–3 locations, 20–300 seats) in Tier-1 and Tier-2 Indian cities, starting with Telangana and Andhra Pradesh. Price sensitive, run on WhatsApp + Excel today. |
+| Q1 | Who is the beachhead customer? Metro operators (Bengaluru, Hyderabad, Pune) or Tier-2/3 spaces? | Small and mid-size independent spaces (1–3 locations, 20–300 seats) in Tier-1 and Tier-2 Indian cities. Price sensitive, run on WhatsApp + Excel today. Beachhead: independent 1–3 location spaces in one city with a meaningful share of bookings from aggregators. Hyderabad was suggested; the city is not confirmed (13 OQ16). The first 20 owners there are pilots (§4). |
 | Q2 | Is the product India-only for v1? | Yes. INR, GST, Indian phone numbers, IST, Razorpay, DLT-registered SMS. Data designed so currency, tax and timezone are per tenant, so other markets can be added later. |
 | Q3 | Is "Powered by SSPL" the final badge text? Customers will not know who SSPL is. | Badge reads **"Powered by Cowos"** (optionally "Cowos by SSPL") and links to the Cowos marketing site with a referral code. See Change C6. |
 | Q4 | Does SSPL want to be in the money flow for customer bookings? | No. Customer money goes straight to the tenant's own payment gateway account. SSPL never holds customer funds. See Change C4. |
-| Q5 | What does "charge only for server cost" mean commercially? Is SSPL willing to run at zero margin? | No. SSPL charges a flat monthly subscription that covers hosting plus platform costs, and takes **0% commission on bookings**: Cowos never takes a share of the tenant's booking revenue. What the tenant charges its own customers (prices, discounts, promo codes, fees) is the tenant's decision, not Cowos's. See Change C1. |
+| Q5 | What does "charge only for server cost" mean commercially? Is SSPL willing to run at zero margin? | **Answered (D1, 2026-11-02): yes.** SSPL charges tenants only their share of the real AWS hosting cost, plus messaging at cost. There is no subscription, plan fee or commission, so SSPL earns no margin. Cowos takes **0% commission on bookings**: it never takes a share of the tenant's booking revenue. What the tenant charges its own customers (prices, discounts, promo codes, fees) is the tenant's decision, not Cowos's. See Change C1. |
 | Q6 | How many tenants do you expect in year 1 and year 3? | 50–150 tenants in year 1, 500–1,500 by year 3. Average 15,000 customer-facing page views and 300 bookings per tenant per month. |
 | Q7 | Do tenants have multiple locations (centres)? | Data model supports many locations per tenant from day 1. The MVP admin UI is tuned for 1 location; multi-location UI lands in Phase 2. |
 | Q8 | Should private cabins and dedicated desks be instantly bookable online? | No, not by default. These are sales-led deals (tour, quote, agreement, deposit). Cowos supports per-product **booking modes**: Instant Book, Request to Book, and Enquire / Book a Tour. See Change C7. |
@@ -28,7 +32,7 @@ This pack has 13 deliverables (files `01` to `13`). Read this file first. It hol
 | Q12 | What team will build this, and what is the target MVP date? | 2 backend (.NET), 2 frontend (React), 1 full-stack/DevOps, 1 QA, 1 designer (part-time), 1 PM. MVP in ~5–6 months. |
 | Q13 | Do you have the domains? | SSPL owns or will buy `cowos.in` (marketing + admin) and a **separate** domain for tenant sites, for example `cowos.site`. See Change C5. |
 | Q14 | Language support? | English only in Phase 1. Content model stores text so Telugu/Hindi can be added in Phase 3. |
-| Q15 | Is a free trial allowed? | Yes. 14-day trial, no card needed, publish allowed on a platform subdomain only, with a "Trial" ribbon in admin (not on the public site). |
+| Q15 | Is a free trial allowed? | Yes, for non-pilot tenants from the Billing release (P1-B, CEO-S1). 14-day trial, no card needed, publish allowed on a platform subdomain only, with a "Trial" ribbon in admin (not on the public site). Pilots never have a trial (Pilot Rules #4). |
 | Q16 | Who handles customer support for end customers (members)? | The tenant. SSPL supports tenants only. The booking app shows the tenant's contact details, never SSPL's. |
 
 ---
@@ -37,39 +41,33 @@ This pack has 13 deliverables (files `01` to `13`). Read this file first. It hol
 
 Each change lists the original idea, the problem, and the better alternative. All later documents assume these changes. If you reject one, the affected sections are listed so you know what to rework.
 
-### C1. Pricing: "we charge only the server cost" → flat plans + 0% commission
+### C1. Pricing: hosting cost share + messaging at cost + 0% commission (decided, D1)
 
 **Original:** Charge tenants only for their EC2 cost, shown with a transparent cost breakdown.
 
-**Problems:**
-- With a shared platform (C2), the real AWS cost per small tenant is roughly ₹100–₹400/month. Pass-through pricing at that level cannot fund support, development, SMS/WhatsApp, security, or sales. The business would lose money on every tenant.
-- With one EC2 per tenant, the real cost is ₹2,500–₹4,000/month per tenant, which is too expensive for the target customer.
-- Calling a price "server cost" when it contains margin is misleading. Tenants will compare it to AWS's public price list. That damages the trust the whole product is built on.
-- Variable costs (SMS, WhatsApp, email, storage beyond limits) are real and change per tenant. They need their own line.
+**v0.1 recommendation (superseded):** flat monthly plans, because a pass-through charge of ₹100–₹400 per tenant per month cannot fund support, development or sales. One EC2 per tenant was rejected as too expensive (C2).
 
-**Better:** Keep the promise that matters to tenants, and make it the headline:
+**Decision (D1, product owner, 2026-11-02; Premise 5):** SSPL charges tenants only their share of the real AWS hosting cost, plus messaging at cost. There is no subscription, plan fee, plan tier, plan limit or commission. Every tenant gets every feature (Pilot Rules #2). The headline (28A):
 
-> **0% commission on every booking. Your customers pay you directly. You pay Cowos a flat monthly fee.**
+> **0% commission. You pay only your share of our real AWS bill.**
+
+How the charge works (Pilot Rules #10; full rules in BRD §7):
+- **Cost pool:** the production AWS account's monthly bill, read from AWS Data Exports (CUR 2.0), net of AWS credits. SSPL pays for staging, dev, CI, the marketing site and Super Admin.
+- **Split:** equally across counted tenants (Active, PastDue or Restricted for any part of the month, pilots included), prorated by days live. SSPL pays the shares of its test and demo tenants and of pilots in their free year. SSPL absorbs unpaid shares; they are never passed to other tenants.
+- **Invoice:** monthly in arrears on the 10th, once AWS marks the bill final; GST added; due in 10 days. Later AWS credits, refunds or support fees appear as an adjustment line on the next invoice. Paid by Razorpay payment link, or by optional UPI Autopay or e-mandate (₹5,000 per-tenant maximum, RBI pre-debit notice).
+- **Messaging:** prepaid wallet at provider cost, with no free allowance.
+- **Transparency:** the billing page shows the AWS bill breakdown behind the charge (5A). The pricing page shows last month's actual per-space share (28A).
+- **Indicative charge:** about ₹1,250–2,250 per tenant per month at 20 tenants, falling to about ₹100–400 at 200+ tenants [estimated from the C2 table].
+- **Timing:** automated billing ships in the Billing release (P1-B, §5). Pilots pay nothing for their first 12 months (§4).
 
 **What "0% commission" means (and doesn't mean):**
-- It is a promise from **Cowos to the tenant**: Cowos takes no percentage or per-booking fee from the tenant's booking revenue. The tenant's only charges from Cowos are the flat plan fee and messaging usage.
+- It is a promise from **Cowos to the tenant**: Cowos takes no percentage or per-booking fee from the tenant's booking revenue. The tenant's only charges from Cowos are its hosting cost share and messaging usage.
 - It says **nothing about what the tenant charges its customers.** Prices, member rates, promo codes, discounts, convenience fees, deposits and whether to pass gateway fees on to customers are all set by the tenant in the Tenant Admin. Cowos never adds its own fee to a customer's bill.
 - Payment gateway charges (Razorpay's MDR) are between the tenant and Razorpay. Cowos doesn't mark them up.
 
-- 3 flat plans (Starter / Growth / Pro) priced by locations and bookable resources, not bookings or revenue.
-- Messaging (SMS / WhatsApp) billed at cost from a prepaid wallet, shown line by line. This is where "transparent cost breakdown" belongs.
-- A pricing page panel "Where your fee goes" showing an honest allocation (hosting and CDN, backups, SSL, messaging infrastructure, support, product updates). It is an allocation, labelled as such, not a fake per-server invoice.
+**Accepted risk:** with no margin on cost, tenant payments do not fund SSPL's support, onboarding or development (Premise 5; 13 R1). Goal G3 is cost recovery, not margin (CEO-A5).
 
-Indicative plans (validate with 10 customer interviews before locking):
-
-| Plan | Who | Indicative price (excl. GST) | Limits |
-|------|-----|------------------|--------|
-| Starter | Single small space | ₹999/month or ₹9,990/year | 1 location, 25 bookable resources, platform subdomain or 1 custom domain, tenant promo codes |
-| Growth | Established single/dual centre | ₹2,499/month or ₹24,990/year | 3 locations, 100 resources, memberships, embeddable widget |
-| Pro | Multi-centre operator | ₹5,999/month or ₹59,990/year | 10 locations, unlimited resources, staff roles, API, priority support |
-| Dedicated (Phase 3) | Large operator needing isolation | Quote (AWS cost + fixed ops fee, shown separately) | Dedicated database and compute |
-
-Affects: 01 Vision, 03 BRD (pricing), 04 SRS (FR-PB-*), 12 Release plan.
+Affects: 01 Vision, 03 BRD §7, 04 SRS (FR-MW-002/003/004, FR-PL-060/061/062, FR-TA-175/176, FR-SA-020/021), 08 Architecture, 09 Data model, 12 Release plan, 13 Decisions.
 
 ### C2. Hosting: one EC2 per tenant → shared multi-tenant platform (hybrid later)
 
@@ -81,8 +79,8 @@ Comparison (rough ap-south-1 Mumbai on-demand figures, Oct 2026; validate with t
 
 | Factor | A. EC2 per tenant (silo) | B. Shared multi-tenant (pool) | C. Hybrid (pool default, silo for large) |
 |--------|--------------------------|-------------------------------|------------------------------------------|
-| Infra cost per small tenant / month | ~₹2,500–₹4,000 (t4g.small + EBS + public IPv4 + DB + backups + logs) | ~₹100–₹400 at 200+ tenants (shared ECS/Fargate + RDS Multi-AZ + CloudFront) | Pool tenants ₹100–₹400; silo tenants priced at real cost |
-| Fixed base cost | Low at start, grows linearly | ~₹25,000–₹45,000/month base regardless of tenant count | Same as B, plus silo stacks as sold |
+| Infra cost per small tenant / month | ~₹2,500–₹4,000 (t4g.small + EBS + public IPv4 + DB + backups + logs) | ~₹100–₹400 at 200+ tenants (shared ECS/Fargate + RDS Multi-AZ + CloudFront) | Pool tenants share the pool cost (D1); how a silo cell is charged is open (13 OQ20) |
+| Fixed base cost | Low at start, grows linearly | ~₹25,000–₹45,000/month base regardless of tenant count | Same as B, plus each silo stack |
 | Scalability | Per tenant, manual or per-tenant ASG | Horizontal autoscaling of shared services | Both |
 | Isolation | Strong (separate VM and DB) | Logical: TenantId + PostgreSQL Row-Level Security + per-tenant encryption context | Strong for silo tenants, logical for the rest |
 | Security | Smaller blast radius, but 500 servers to patch means patch lag, which is its own risk | One hardened fleet, patched once; needs strict tenant-isolation tests | Same as B plus silo |
@@ -127,7 +125,7 @@ Affects: 07 NFR (SEO), 08 Architecture.
 
 Cowos uses Razorpay Checkout (hosted/modal). Card data never touches Cowos servers, so PCI-DSS scope stays at SAQ-A level.
 
-SSPL's own platform billing (tenant pays Cowos) uses SSPL's own Razorpay account with Subscriptions (UPI Autopay / e-mandate / card).
+SSPL's own platform billing (tenant pays its hosting cost share to SSPL) uses SSPL's own Razorpay account: a payment link per monthly invoice, or optional UPI Autopay / e-mandate with a ₹5,000 per-tenant maximum and the RBI pre-debit notice (Pilot Rules #10). It ships in the Billing release (P1-B).
 
 Affects: 04 SRS (FR-TA-PAY, FR-BA-PAY), 08 Architecture, 11 Integrations.
 
@@ -155,13 +153,13 @@ Affects: 04 SRS (FR-TA-PAY, FR-BA-PAY), 08 Architecture, 11 Integrations.
 - On a custom domain, the tenant chooses `book.<domain>` (matches the Directoo pattern and works best for tenants who keep their existing website) or `/book` on the same host.
 - Apply to add `cowos.site` to the Public Suffix List so browsers treat each tenant subdomain as a separate site for cookies.
 
-**Apex domain trap (India specific):** Most Indian tenants buy domains from GoDaddy, Hostinger or BigRock, whose DNS does not support CNAME/ALIAS at the apex (`acmecowork.com`). CloudFront has no fixed IP by default. Recommended handling: the site runs on `www`, and the tenant sets up the registrar's free "domain forwarding" from apex to `www` (we show step-by-step guides per registrar). Option for later: offer static anycast IPs for apex A records (CloudFront Anycast Static IPs or Global Accelerator) on Pro plans if demand justifies the cost.
+**Apex domain trap (India specific):** Most Indian tenants buy domains from GoDaddy, Hostinger or BigRock, whose DNS does not support CNAME/ALIAS at the apex (`acmecowork.com`). CloudFront has no fixed IP by default. Recommended handling: the site runs on `www`, and the tenant sets up the registrar's free "domain forwarding" from apex to `www` (we show step-by-step guides per registrar). Option for later: offer static anycast IPs for apex A records (CloudFront Anycast Static IPs or Global Accelerator) if demand justifies the cost. There are no paid tiers to reserve it for (D1).
 
 Affects: 06 Flows, 08 Architecture, 09 Data model (Domain).
 
 ### C6. Badge: "Powered by SSPL" → "Powered by Cowos"
 
-A badge is a growth channel (every tenant site advertises the product). Visitors searching "SSPL" will find nothing useful, and SSPL is a generic acronym shared by other companies. Use "Powered by Cowos", link to `cowos.in/?ref=<tenant-slug>` for attribution, and keep "a product of SSPL" on the Cowos marketing site. The badge is mandatory on all plans in v1. Make it small, accessible, theme-aware, and not removable through custom CSS (rendered by the platform, checked at publish).
+A badge is a growth channel (every tenant site advertises the product). Visitors searching "SSPL" will find nothing useful, and SSPL is a generic acronym shared by other companies. Use "Powered by Cowos", link to `cowos.in/?ref=<tenant-slug>` for attribution, and keep "a product of SSPL" on the Cowos marketing site. The badge is mandatory for every tenant in v1. Make it small, accessible, theme-aware, and not removable through custom CSS (rendered by the platform, checked at publish).
 
 ### C7. Booking modes: not everything should be "Book and pay now"
 
@@ -227,11 +225,11 @@ These are added to the requirements:
 
 ## 3. Decisions you need to make
 
-The full list with owners and deadlines is in [13-risks-open-questions-decisions.md](13-risks-open-questions-decisions.md). The six that block engineering:
+The full list with owners and deadlines is in [13-risks-open-questions-decisions.md](13-risks-open-questions-decisions.md). D1 is decided. D2–D6 are still Proposed and block engineering:
 
 | ID | Decision | My recommendation | Needed by |
 |----|----------|-------------------|-----------|
-| D1 | Pricing model | Flat plans + 0% commission + messaging at cost (C1) | Before marketing site copy |
+| D1 | Pricing model | **Decided 2026-11-02:** hosting cost share + messaging at cost, no subscription or plan fee, 0% commission (C1) | Done |
 | D2 | Hosting model | Shared multi-tenant, hybrid-ready (C2) | Before architecture sprint 0 |
 | D3 | Payment model | Tenant's own Razorpay via OAuth; no Route (C4) | Before payments sprint; start Razorpay Partner application now (takes weeks) |
 | D4 | Domains | `cowos.in` + separate `cowos.site` (C5) | Before sprint 0 (buy domains) |
@@ -240,7 +238,40 @@ The full list with owners and deadlines is in [13-risks-open-questions-decisions
 
 ---
 
-## 4. Document index
+## 4. Pilot programme (decided 2026-11-02)
+
+The binding rules are Pilot Rules #1–#10 in `docs/designs/cowos-platform-v1.md`. BRD §7 and the release plan (12) carry them as requirements. Summary:
+
+| Topic | Rule |
+|-------|------|
+| Who | The first 20 owners in the beachhead city (§1 Q1). |
+| Offer | 12 months fully free per tenant, from its first live publish on production. Full feature set, plus Phase 2 features as they ship. No other commitments (Pilot Rules #2, #3). |
+| Set-up | Super Admin creates the pilot tenant on production directly in Active with a pilot flag, and invites the Owner through the staff invite flow with the Owner role (single use, 72-hour expiry, phone OTP, owner sets password and MFA) (CEO A2). A pre-handover setup grant lets SSPL configure the tenant while it has no Owner, is unpublished and has no live payments; it ends when the Owner accepts, and every write is audited. After handover, tenant-approved support grants apply (R19). The owner does Razorpay KYC and OAuth, GSTIN/PAN, DNS, and accepts the ToS and DPA. One named SSPL onboarding owner runs pilot onboarding, about 15 person-days across weeks 18–30 (Pilot Rules #4, #9). |
+| Timing | Weeks 18–21: guided staging preview in Razorpay test mode, no real customers. From week 22: setup on production, unpublished, no live payments, until the production entry gate passes (12 §4). 10 pilots live at the week-24 launch, the other 10 within 6 weeks. If the gate passes after week 24, the 10-pilot target moves to 2 weeks after the gate (Pilot Rules #1). |
+| Messaging | SSPL-funded wallet. Fair use: 1,000 SMS + WhatsApp notifications per pilot per month (provisional), then email only and SSPL is alerted. Sign-in OTPs: SSPL alerted at 1,000; at 2,000, phone OTP pauses for that tenant for the rest of the month and customers sign in by email OTP (Pilot Rules #5). |
+| Billing | No payment method, trial or dunning during the free year, and no ₹0 invoices. Pilots are counted in the cost pool and SSPL pays their share (Pilot Rules #4, #10). |
+| End of the free year | Notices at 60, 30 and 7 days; the tenant adds a payment method with the 60-day notice. Month 13's share is invoiced on the 10th of month 14. A pilot that hasn't paid that first invoice by its due date plus 14 days stays Restricted for 90 days, then follows the normal lifecycle (Pilot Rules #6). |
+| Billing validation | Non-pilot sign-up and SSPL's own paid test tenant start at the Billing release. Before the first pilot converts, at least one real monthly hosting charge has been paid and one dunning cycle has run end to end on production (Pilot Rules #7, CEO-S1). |
+| Tracking | Super Admin pilot scorecard: paid online bookings per pilot per month, counted in the Asia/Kolkata month the payment was captured; cap usage; expansion gate status (CEO-A4, R20). |
+| Expansion gate | Open a second city when 10 pilots each take 10 or more paid online bookings a month for 3 consecutive months (Pilot Rules #8). |
+| Cost to SSPL | About ₹4–7.5 lakh hosting for the pilot year including staging, plus up to about ₹1.8 lakh messaging [estimated] (13 R25). |
+
+---
+
+## 5. Release phases
+
+The release plan (12 §1) has the detail. Requirement tables use these phase codes:
+
+| Code | Phase | Indicative timing | What ships |
+|------|-------|-------------------|------------|
+| P1 | Phase 1 (MVP launch) | Weeks 1–24 | Everything needed for pilots to publish and take paid bookings: settings screens with the owner checklist, builder with 2 themes, booking app, payments and invoices, front desk, CRM, notifications with the SSPL-funded pilot wallet, custom domains, Super Admin with the Pilots page (create pilot, pilot requests, scorecard) and manual suspend/reinstate. Tenant states at launch are Active (pilot) and Suspended only. Themes 3–4 follow about 6 weeks after launch (CEO-S3). |
+| P1-B | Billing release | Launch + about 4 months [estimated] | Platform billing and self-serve sign-up (CEO-S1, CEO-S2): the CUR billing job and billing tables, collection by payment link and UPI Autopay / e-mandate, dunning with automatic Restricted and Suspended moves, the pricing JSON and "last month's actual", the daily charge estimate, the 14-day trial, non-pilot wallet top-up, public sign-up (FR-MW-005), referral capture (FR-MW-006), slug availability check (FR-MW-012), sign-up and trial metrics (FR-SA-051), the dunning dashboard (FR-SA-023), and the onboarding wizard (FR-TA-001 flow, GSTIN legal-name lookup, Places autocomplete FR-TA-004, booking-only path FR-TA-006, demo inventory FR-TA-008 with its sample publish check). |
+| P2 | Phase 2 | Months 7–10 | "Run the space on Cowos": memberships, widget, PWA. |
+| P3 | Phase 3 | Months 11–18 | "Scale and integrate". |
+
+---
+
+## 6. Document index
 
 | # | Document | What's in it |
 |---|----------|--------------|
