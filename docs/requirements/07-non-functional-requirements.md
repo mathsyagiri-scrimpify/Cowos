@@ -1,6 +1,6 @@
 # 07 · Non-Functional Requirements
 
-> Cowos requirements pack · v0.2 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked. "P1-B" marks the Billing release (launch + 4 months).
+> Cowos requirements pack · v0.3 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked.
 
 ## 1. Multi-tenancy and data isolation
 
@@ -16,7 +16,7 @@
 | NFR-MT-08 | The architecture supports moving a tenant to a dedicated cell (own database, optional own compute) by updating the tenant catalog and running a data migration job, with no application code change (Phase 3 capability, designed in P1). |
 | NFR-MT-09 | Tenant-context guard tests run in CI: a pooled-connection leak test through RDS Proxy alternates tenants on reused connections and asserts no row of the previous tenant is visible; an architecture test fails the build on any session-level `SET` (R3). |
 | NFR-MT-10 | Cross-tenant sweeps (hold expiry, reminders, no-show) find work through a `cowos_sweeper` DB role. Its read-only RLS policies expose only `(id, tenant_id)` of rows matching each sweep predicate, served by the sweep partial indexes (09 §4). The worker then handles each returned row in its own per-tenant transaction (NFR-MT-02). An isolation test proves the role can't read other columns or write; a sweep test finds rows across two tenants; a query-plan test asserts each sweep uses its index (R7, R8). |
-| NFR-MT-11 | Platform data that is not tenant data, such as pilot requests from the Book-a-demo form, lives in the platform schema outside tenant RLS and is readable only by the Super Admin role (NFR-SEC-01, CEO-A2). |
+| NFR-MT-11 | Platform data that is not tenant data, such as demo requests from the Book-a-demo form and the SSPL cost view data (Pricing Rule #10), lives in the platform schema outside tenant RLS and is readable only by the Super Admin role (NFR-SEC-01, CEO-A2). |
 
 ## 2. Security
 
@@ -40,9 +40,9 @@
 | NFR-SEC-14 | AWS WAF on CloudFront with managed rule sets, bot control on OTP and contact-form endpoints, geo rules optional. |
 | NFR-SEC-15 | Annual third-party penetration test; one before public launch. |
 | NFR-SEC-16 | Least-privilege IAM per service; no long-lived IAM user keys; CI deploys via OIDC federation. |
-| NFR-SEC-17 | Support impersonation only through tenant-approved grants (02 §3.3), with dual-identity audit records. Before a pilot has an Owner, the only exception is the pre-handover setup grant: write access only while the tenant has no Owner, is unpublished and has no live payments; it ends when the Owner accepts the invite; every write is audited and listed at handover. Tests: writes allowed with no Owner; rejected once an Owner exists or the tenant publishes (R19). |
-| NFR-SEC-18 | Owner invite links (CEO-A2): single use, 72-hour expiry, a resend revokes the old link, phone OTP on acceptance, MFA set by the owner before connecting a gateway or domain (FR-TA-007). An expired or reused link returns 410. |
-| NFR-SEC-19 | Public Book-a-demo / pilot request form on `cowos.in`: honeypot, 5 submissions per IP per hour, invisible challenge (the FR-TW-006 protection); input stored as plain text and rendered escaped in Super Admin. Tests: honeypot and rate limit reject; a script in a message renders as text (CEO-A2). |
+| NFR-SEC-17 | Support impersonation only through tenant-approved grants (02 §3.3), with dual-identity audit records. There is no exception (the pre-handover setup grant R19 was removed in v0.3 with the pilot programme; Pricing Rule #9). |
+| NFR-SEC-18 | Removed in v0.3 (Owner invite links by SSPL removed with the pilot programme; Owners sign up self-serve, Pricing Rule #9). Staff invitation links keep their own rules (FR-TA-172). |
+| NFR-SEC-19 | Public Book-a-demo form on `cowos.in`: honeypot, 5 submissions per IP per hour, invisible challenge (the FR-TW-006 protection); input stored as plain text and rendered escaped in Super Admin. Tests: honeypot and rate limit reject; a script in a message renders as text (CEO-A2). |
 | NFR-SEC-20 | Resumable booking URL (`/book/checkout/{bookingRef}`) and its status endpoint require the customer's session; without one the page asks for OTP and then shows the state; another customer's session gets 404 (R16). |
 
 ### 2.2 PCI-DSS scope minimisation
@@ -52,7 +52,7 @@
 | NFR-PCI-01 | Card data is entered only into Razorpay Checkout (Razorpay-hosted iframe/modal). Cowos never receives, stores, processes or logs PAN, CVV or expiry. |
 | NFR-PCI-02 | Cowos targets SAQ-A eligibility: payment pages load the gateway script from the gateway domain only; CSP restricts script sources; integrity of payment page scripts monitored (PCI DSS v4.0 req. 6.4.3 and 11.6.1). |
 | NFR-PCI-03 | Stored payment data limited to gateway IDs (order, payment, refund), method type, last 4 digits/UPI handle masked as returned by the gateway, amounts and statuses. |
-| NFR-PCI-04 | Hosting invoices are paid by Razorpay payment link or, optionally, UPI Autopay / e-mandate held at Razorpay (₹5,000 per-tenant maximum, RBI pre-debit notice). No card-on-file at Cowos (Pilot Rules #10, P1-B). |
+| NFR-PCI-04 | Server invoices are paid by Razorpay payment link or, optionally, UPI Autopay / e-mandate held at Razorpay (₹5,000 per-tenant maximum, RBI pre-debit notice). Wallet top-ups are paid through Razorpay on SSPL's account. No card-on-file at Cowos (Pricing Rules #5, #6). |
 
 ## 3. Performance
 
@@ -70,7 +70,7 @@
 | NFR-PERF-10 | Notification dispatch after booking confirmation | ≤ 60 s p95 |
 | NFR-PERF-11 | Design load (year 3) | 1,500 tenants, 50 req/s sustained public API, 300 req/s peak, 5,000 bookings/hour peak |
 | NFR-PERF-12 | Booking app theme shell chunk, one per theme, loaded only for the tenant's theme (16A, R13); checked in CI; a test asserts a tenant on theme X never downloads theme Y | ≤ 40 KB gzip each (fonts excluded) |
-| NFR-PERF-13 | Website pages correct after a tenant enters or leaves Suspended (launch) or Restricted (P1-B) (R11, CEO-A1) | ≤ ~2 min p95 |
+| NFR-PERF-13 | Website pages correct after a tenant enters or leaves Suspended or Restricted (R11, CEO-A1, Pricing Rule #8) | ≤ ~2 min p95 |
 | NFR-PERF-14 | Core Web Vitals (NFR-PERF-01) and Lighthouse budgets (NFR-PERF-02) met on every launched theme: a launch checklist item and a release gate for each later theme (CEO-S3) | Pass |
 
 ## 4. Availability and resilience
@@ -78,20 +78,23 @@
 | ID | Requirement |
 |----|-------------|
 | NFR-AV-01 | Tenant websites: 99.95% monthly availability (static on S3 + CloudFront; independent of API health). |
-| NFR-AV-02 | Booking app and public API: 99.9% monthly (≈43 min downtime/month). |
-| NFR-AV-03 | Admin portals: 99.5% monthly, maintenance windows announced 48h ahead, Sunday 02:00–05:00 IST. |
-| NFR-AV-04 | Multi-AZ for database (RDS Multi-AZ) and compute (tasks across ≥2 AZs). |
-| NFR-AV-05 | Zero-downtime deploys (blue/green or rolling with health checks); database migrations backward-compatible (expand/contract). |
+| NFR-AV-02 | Booking app and public API: 99.9% monthly (≈43 min downtime/month). Open: this target is not confirmed for one app server (Open Question 6, Rule #11). |
+| NFR-AV-03 | Admin portals: 99.5% monthly, maintenance windows announced 48h ahead, Sunday 02:00–05:00 IST. Open: this target is not confirmed for one app server (Open Question 6, Rule #11). |
+| NFR-AV-04 | Database: managed PostgreSQL on RDS, Multi-AZ, with automated backups and point-in-time recovery (NFR-BK-01). Compute: one app server (EC2) runs the API, the admin portal and booking app back ends, the worker and the site renderer for every tenant (Rule #11). The app server is a single point of failure for admin and booking; tenant websites keep serving from S3 + CloudFront when it is down (NFR-AV-01). |
+| NFR-AV-05 | Deploys to the app server may cause a short outage of the API, admin and booking. The acceptable downtime per deploy is open (Open Question 6). Each deploy health-checks the new release and rolls back to the previous release if the check fails. Database migrations stay backward-compatible (expand/contract) so a rollback needs no schema change. |
 | NFR-AV-06 | Graceful degradation: if messaging providers fail, bookings still confirm and notifications retry; if the gateway is down, booking app shows a clear message and offers Request-to-Book where enabled. |
 | NFR-AV-07 | Public status page (`status.cowos.in`) for tenants. |
 | NFR-AV-08 | Edge consistency (R17): the CloudFront KeyValueStore always ends equal to the database's live pointer and tenant state. Only the EdgeSyncWorker writes KVS; it reads the current DB values at send time from the `edge_sync` outbox. No other job writes KVS directly. Tests: KVS writes forced into the reverse of the DB commit order end with KVS equal to DB; a worker restart resends the current values. If the worker is down the edge keeps the last value and an alert fires (NFR-OBS-05). |
 | NFR-AV-09 | Live-pointer correctness: after every render job finishes, the live pointer shows the newest owner-chosen version (publish or rollback) in the page variant that matches the tenant's current state. A normal-site render never goes live while the tenant is Suspended (CEO-A1); a data refresh never replaces a newer publish or newer data (CEO-A3, R18). |
+| NFR-AV-10 | Automatic instance recovery: when the app server fails its EC2 status checks or its health check, it is recovered or replaced automatically with no manual step, and the services start on boot (Rule #11). A recovery drill on staging has a documented result before launch. |
+| NFR-AV-11 | Infrastructure-as-code rebuild: the app server, its network, load balancer and configuration are defined in Terraform, so a new server can be built from code and the current release in another AZ if the instance or its AZ is lost. Nothing needed to run the app is kept only on the server's disk (NFR-SC-01). A rebuild drill runs with the quarterly restore drill (NFR-BK-05) (Rule #11). |
+| NFR-AV-12 | Health alarms on the app server: instance status checks, API health endpoint (`/healthz`, `/readyz`), CPU, memory, disk, and worker and renderer process health, routed to on-call (NFR-OBS-05) (Rule #11). |
 
 ## 5. Scalability
 
 | ID | Requirement |
 |----|-------------|
-| NFR-SC-01 | Stateless API and worker containers that scale horizontally on CPU/requests/queue depth. |
+| NFR-SC-01 | API, worker and renderer processes are stateless: no session, file or queue state lives only on the app server (sessions, jobs and files are in PostgreSQL, Valkey and S3). At launch they run on one app server (Rule #11); the server can be resized or replaced, and more servers added later, with no application code change. Renders run with a concurrency limit so they don't starve the API on the shared server. |
 | NFR-SC-02 | Database sized for year-1 load on a single primary; read replica added for reporting when CPU > 60% sustained. PgBouncer / RDS Proxy for connection pooling. |
 | NFR-SC-03 | Large tables (bookings, notification logs, audit logs) designed for time-based partitioning once they exceed ~50 M rows. |
 | NFR-SC-04 | Static websites scale with the CDN; no per-tenant compute is needed to serve them. |
@@ -116,10 +119,10 @@
 | NFR-OBS-02 | OpenTelemetry traces and metrics from API and workers, exported to CloudWatch / X-Ray or a managed Grafana stack. |
 | NFR-OBS-03 | Frontend error monitoring (e.g. Sentry) for all React apps, with tenant tag and release version. |
 | NFR-OBS-04 | Business metrics: bookings/min, hold-to-confirm conversion, payment failure rate, webhook lag, notification delivery rate per channel. |
-| NFR-OBS-05 | Alerts (PagerDuty/Opsgenie or SNS → on-call): API 5xx > 1% for 5 min, p95 latency breach, queue age > 5 min, `edge_sync` outbox age > 2 min (R17), suspend render failed 3 times (CEO-A1), pilot request notification failed (CEO-A2), pilot fair-use caps reached (Pilot Rules #5), payment webhook failures, certificate expiry < 14 days, DB CPU > 80%, disk, replication lag, failed backups. From P1-B: billing run held because the AWS bill is not final or export data is missing (R2). |
+| NFR-OBS-05 | Alerts (PagerDuty/Opsgenie or SNS → on-call): API 5xx > 1% for 5 min, p95 latency breach, queue age > 5 min, `edge_sync` outbox age > 2 min (R17), suspend render failed 3 times (CEO-A1), demo request notification failed (CEO-A2), payment webhook failures, certificate expiry < 14 days, DB CPU > 80%, disk, replication lag, failed backups, app server health alarms (NFR-AV-12), a daily metering job failed or not finished for its day, the rating job on the 1st failed (NFR-MTR-01 to 06, Pricing Rules #3, #5). |
 | NFR-OBS-06 | Synthetic checks every 5 minutes: demo tenant website, booking availability, hold creation (test tenant), admin login. |
 | NFR-OBS-07 | Audit logs retained 3 years (append-only, separate table/stream, tamper-evident hashing optional). Application logs retained 30 days hot, 1 year archive. |
-| NFR-OBS-08 | Platform cost visibility: the production AWS bill is read from AWS Data Exports (CUR 2.0) into the monthly cost pool, and tenant hosting payments against the production bill plus messaging are tracked monthly, with SSPL's unrecovered cost (staging, dev, pilot year, team) shown alongside (CEO-A5, P1-B). AWS cost allocation tags and usage metering (requests, storage, messages) are kept for cost-to-serve and the later review of the equal split (R9). |
+| NFR-OBS-08 | SSPL cost view: the production AWS bill is read from AWS Data Exports (CUR 2.0) and messaging-provider cost from the recorded per-message cost, and shown in Super Admin next to billed revenue (server invoices and wallet debits) per month, so SSPL can set slab prices and track goal G3. CUR is never used to bill tenants (Pricing Rule #10, CEO-A5). AWS cost allocation tags are kept for cost-to-serve. |
 
 ## 8. Accessibility (WCAG 2.1 AA)
 
@@ -155,7 +158,7 @@ Roles: the **tenant** is the Data Fiduciary for its customers' personal data; **
 
 | ID | Requirement |
 |----|-------------|
-| NFR-PRIV-01 | Data Processing Agreement between SSPL and each tenant, accepted by the Owner (versioned, timestamped): on Owner invite acceptance for pilots (CEO-A2), at sign-up for non-pilots (P1-B). |
+| NFR-PRIV-01 | Data Processing Agreement between SSPL and each tenant, accepted by the Owner (versioned, timestamped) at sign-up (FR-MW-005, Pricing Rule #9). |
 | NFR-PRIV-02 | Notice at collection: customer sign-up and contact/tour forms show a clear notice (what data, purpose, how to withdraw consent, how to exercise rights, grievance contact, how to complain to the Data Protection Board) in plain English (Indian languages in Phase 3). |
 | NFR-PRIV-03 | Consent: separate, unticked, granular consent for marketing (WhatsApp/SMS/email). Booking-related messages rely on the performance-of-contract/legitimate use basis as advised by counsel. Consent records store who, what notice version, when, channel, and withdrawal. |
 | NFR-PRIV-04 | Withdrawal of consent as easy as giving it: profile toggle, "STOP" handling on WhatsApp/SMS, unsubscribe link in emails. |
@@ -169,7 +172,7 @@ Roles: the **tenant** is the Data Fiduciary for its customers' personal data; **
 | NFR-PRIV-12 | Personal data never placed in URLs, query strings or analytics events. |
 | NFR-PRIV-13 | Desk pass link (no login, 17A): the token is opaque with no personal data, HMAC-bound to booking id and purpose `pass`, expires at booking end, and is revoked on cancel or reschedule. The pass shows first name + last initial, date/time, room and tenant logo. The QR holds a separate short-lived check-in code validated against the tenant at scan. Responses carry `noindex`, `Referrer-Policy: no-referrer` and `Cache-Control: private`. Tests reject expired, revoked, wrong-tenant and wrong-purpose tokens and confirm a forwarded link shows no full name (R10). |
 | NFR-PRIV-14 | Offline desk pass in Phase 1: a service worker scoped to the pass route only caches the opened pass page and QR image, cleared when the booking ends. The full PWA stays in Phase 2 (R14). |
-| NFR-PRIV-15 | Book-a-demo / pilot request form on `cowos.in`: a privacy notice under the form shows purpose (pilot contact), 12-month retention and the grievance contact; requests are retained for 12 months under NFR-PRIV-07 (CEO-A2). |
+| NFR-PRIV-15 | Book-a-demo form on `cowos.in`: a privacy notice under the form shows purpose (demo contact), 12-month retention and the grievance contact; requests are retained for 12 months under NFR-PRIV-07 (CEO-A2). |
 
 ## 11. Other quality attributes
 
@@ -183,3 +186,16 @@ Roles: the **tenant** is the Data Fiduciary for its customers' personal data; **
 | NFR-OT-06 | Environments | Dev, Staging (with Razorpay test mode and real DNS on `cowos-staging.site`), Production; production data never copied to lower environments without anonymisation. |
 | NFR-OT-07 | Test stack | .NET: xUnit + FluentAssertions. Integration tests run on Testcontainers PostgreSQL 17 through WebApplicationFactory, so RLS, `btree_gist` exclusion constraints and transactions are real (no in-memory database). React apps: Vitest + React Testing Library. End to end: Playwright + axe on staging with Razorpay test mode. Module boundaries: NetArchTest. Docker is available in CI and locally (R6). |
 | NFR-OT-08 | Concurrency proof | Money and ordering paths have concurrency tests on the real database: parallel wallet sends at a near-floor balance never overspend (R4); render pause/release tests for the live-pointer rules (CEO-A1, CEO-A3, R18); reversed-order KVS writes (R17). Pause/release tests use explicit hooks, not sleeps; month-boundary tests use a fixed clock. |
+
+## 12. Metering and billing accuracy
+
+| ID | Requirement |
+|----|-------------|
+| NFR-MTR-01 | Usage records are kept: each tenant's daily usage per meter (request units, storage units, and messages per notification channel) is stored and retained at least as long as the invoice or wallet debits it supports, so a tenant can see the daily detail behind any invoice (Pricing Rules #3, #5). |
+| NFR-MTR-02 | Invoices are reproducible: re-rating any past month from the stored daily usage and the rate card version recorded on the invoice gives the same units, slab breakdown, taxable value and GST. A published rate card version is never changed; a price change is a new version effective from the 1st of a later month. A test re-rates fixture months and compares them with the issued invoices (Pricing Rule #4). |
+| NFR-MTR-03 | Exclusions are applied before counting: requests blocked by WAF and SSPL's own health checks, synthetic checks (NFR-OBS-06) and monitoring are not counted as request units. Tests feed log fixtures with blocked and monitoring requests and assert they are excluded (Pricing Rule #3). |
+| NFR-MTR-04 | Each request is counted once and from one durable source: CloudFront standard logs for the tenant's website and booking-app hosts (page views and `/api/*` calls, R22). Each request maps to exactly one tenant by its host; requests that map to no tenant, admin-host traffic and responses other than 2xx or 304 are not billed (Pricing Rule #3, R21). |
+| NFR-MTR-05 | Metering jobs are idempotent: re-running the metering for a day replaces that day's records and never adds to them. The rating job on the 1st runs only after every daily metering job for the last day of the month has finished, and issues at most one server invoice per tenant per month (Pricing Rule #5). |
+| NFR-MTR-06 | Notification counts and wallet debits are exact: each message sent increments its channel's month-to-date count and debits the wallet at that count's slab price in one atomic step (R4), so the count always equals the messages sent and parallel sends at a slab boundary each get the right slab price. Counts reset at 00:00 IST on the 1st. Tests use a fixed clock at the month boundary and parallel sends across a slab boundary (Pricing Rules #4, #6). |
+| NFR-MTR-07 | Trial days are not billed: server usage while the tenant is in Trial is recorded but not rated (Pricing Rule #7). |
+| NFR-MTR-08 | Invoices only from complete data: each metering source records a completed run per IST day, and no server invoice is issued for a month until every day is complete for every source; gaps hold invoices and alert SSPL Finance (C2-A2). |

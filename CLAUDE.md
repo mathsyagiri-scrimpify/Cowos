@@ -11,9 +11,9 @@ SSPL's product: a white-label website + booking app platform for independent cow
 - "0% commission" means Cowos takes no share of a tenant's booking revenue. What tenants charge their customers (prices, promo codes, fees) is the tenant's decision.
 - Tenants create their own promo codes in the Tenant Admin.
 - Docs live at project level under `docs/`.
-- SSPL charges tenants only their share of the real AWS hosting cost, plus messaging at cost: no subscription, plan fee or commission (D1, decided 2026-11-02). The pack was updated to v0.2 on 2026-11-03 to match.
-- The approved design doc is `docs/designs/cowos-platform-v1.md` (premises, pilot rules, chosen approach).
-- Decisions D2–D16 in `docs/requirements/13-risks-open-questions-decisions.md` are still Proposed. Don't treat them as approved.
+- SSPL charges tenants only for metered consumption: server usage (requests, storage) and notifications (OTP, SMS, WhatsApp, email), in slabs whose prices SSPL configures, like an electricity bill. No subscription, plan fee or commission, and no free pilot programme (D1, revised 2026-11-04). Hosting is one app server plus managed PostgreSQL (D2, decided 2026-11-04). The pack was updated to v0.3 to match.
+- The approved design doc is `docs/designs/cowos-platform-v1.md` (premises, pricing and billing rules, chosen approach).
+- Decisions D3–D16 in `docs/requirements/13-risks-open-questions-decisions.md` are still Proposed. Don't treat them as approved.
 
 ## Fixed stack (when code starts)
 ASP.NET Core (.NET LTS) API, React + TypeScript, PostgreSQL, AWS (ap-south-1).

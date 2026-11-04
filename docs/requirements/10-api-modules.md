@@ -1,6 +1,6 @@
 # 10 · API Module List
 
-> Cowos requirements pack · v0.2 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked; "P1-B" is the Billing release.
+> Cowos requirements pack · v0.3 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked.
 
 ## 1. Conventions
 
@@ -15,9 +15,9 @@
 | Internal (renderer) | `/internal/...` | n/a | IAM / private network only |
 
 - JSON, camelCase; errors as RFC 9457 problem details; cursor pagination (`?cursor=&limit=`).
-- `Idempotency-Key` header required on POSTs that create holds, bookings, payments, refunds, invoices and pilot tenants.
-- Optimistic concurrency with `If-Match` / ETag on drafts and configuration resources.
-- Tenant state guard (Q1): until the Billing release, any request that would move a tenant into Trial, PastDue or Restricted returns 409. At launch the only state actions are Create pilot tenant (into Active), FR-SA-011 suspend / unpublish, and reinstate.
+- `Idempotency-Key` header required on POSTs that create holds, bookings, payments, refunds, invoices, sign-ups and wallet top-ups.
+- Optimistic concurrency with `If-Match` / ETag on drafts and configuration resources, including draft rate card versions.
+- Tenant state guard: Removed in v0.3. Trial, PastDue, Restricted and Suspended are all in use from launch (Pricing Rules #7, #8).
 - Publishing while Suspended returns 409 with "Your site is suspended. Contact SSPL support." and the reason (CEO-A1).
 - Every request runs in one explicit transaction that sets the tenant first (08 §5.2, R3).
 
@@ -27,9 +27,9 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/api/v1/auth/tenant/signup` | Create tenant + Owner (marketing sign-up) (P1-B; returns 404 at launch, CEO-S1) |
-| GET | `/api/v1/auth/invitations/{token}` | Check an invitation (staff or pilot Owner); expired or used → 410 (FR-TA-172, CEO-A2) |
-| POST | `/api/v1/auth/invitations/{token}/accept` | Accept: phone OTP, set password and MFA; the Owner also accepts ToS and DPA. Single use; ends the pre-handover setup grant for an Owner invite (R19) |
+| POST | `/api/v1/auth/tenant/signup` | Create tenant in Trial + Owner (marketing sign-up); the Owner accepts the ToS and DPA (FR-MW-005, Pricing Rules #7, #9) |
+| GET | `/api/v1/auth/invitations/{token}` | Check a staff invitation; expired or used → 410 (FR-TA-172) |
+| POST | `/api/v1/auth/invitations/{token}/accept` | Accept: phone OTP, set password and MFA. Single use |
 | POST | `/api/v1/auth/otp/send` · `/verify` | Email/phone OTP (invite acceptance, sign-up, customer login) |
 | POST | `/api/v1/auth/tenant/login` · `/logout` · `/refresh` | Tenant user session (BFF) |
 | POST | `/api/v1/auth/tenant/mfa/setup` · `/mfa/verify` | TOTP |
@@ -41,12 +41,12 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/public/slugs/{slug}/availability` | Slug check (P1-B, FR-MW-012, CEO-S1) |
-| GET/PUT | `/api/v1/admin/tenant` | Business details (GSTIN format/checksum and PAN derivation at launch) |
-| POST | `/api/v1/admin/tenant/gstin/verify` | GSTIN legal-name lookup (P1-B, CEO-S2) |
+| GET | `/api/v1/public/slugs/{slug}/availability` | Slug check (FR-MW-012) |
+| GET/PUT | `/api/v1/admin/tenant` | Business details (GSTIN format/checksum and PAN derivation) |
+| POST | `/api/v1/admin/tenant/gstin/verify` | GSTIN legal-name lookup (CEO-S2) |
 | GET | `/api/v1/admin/onboarding` | Owner "left to do" checklist status (FR-TA-002): Razorpay KYC/OAuth, GSTIN/PAN, DNS, ToS, DPA; each item re-checked on load |
-| GET | `/api/v1/admin/onboarding/handoff` | First-login handoff: audited changes SSPL made under the pre-handover setup grant (11A, R19) |
-| PUT | `/api/v1/admin/onboarding/steps/{step}` | Save wizard step (P1-B, CEO-S2) |
+| GET | `/api/v1/admin/onboarding/handoff` | Removed in v0.3 (first-login handoff for pilots removed with the pre-handover setup grant, R19) |
+| PUT | `/api/v1/admin/onboarding/steps/{step}` | Save wizard step (4A, CEO-S2) |
 | GET | `/api/v1/admin/tenant/limits` | Removed in v0.2 (no plan limits, D1) |
 
 ### 2.3 Sites (builder, preview, publish)
@@ -142,7 +142,7 @@
 | POST | `/api/v1/admin/payments/offline` | Record offline payment |
 | POST | `/api/v1/admin/refunds` · GET `/admin/refunds` | Refunds |
 | POST | `/webhooks/razorpay/tenant` | Tenant-account events (payment, refund, order) |
-| POST | `/webhooks/razorpay/platform` | SSPL account events: hosting invoice payment links and UPI Autopay / e-mandate debits (P1-B) |
+| POST | `/webhooks/razorpay/platform` | SSPL account events: server invoice payment links, UPI Autopay / e-mandate debits and wallet top-ups (Pricing Rules #5, #6) |
 
 ### 2.9 Invoicing
 
@@ -205,38 +205,44 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/admin/billing` | Billing page (5A, P1-B): next invoice (issue date, last month's amount, due date, adjustment line), "₹0 commission" line, messaging wallet, AWS breakdown by service category plus tenant count, daily charge estimate (low/high, as of); pilots see the free-period end date and what SSPL covered. Never other tenants' usage |
+| GET | `/api/v1/admin/billing` | Billing page (5A): month-to-date units per server meter with slab breakdown and estimate (updated daily, "as of"), last invoice and its status, next issue date (the 1st), payment method, "₹0 commission" line, wallet summary; trial end date during Trial. Never other tenants' usage (Pricing Rules #5, #7) |
 | GET | `/api/v1/public/platform-plans` | Removed in v0.2 (no plans, D1) |
 | POST | `/api/v1/admin/billing/subscription` · PATCH · DELETE | Removed in v0.2 (no subscriptions, D1) |
-| PUT | `/api/v1/admin/billing/payment-method` | Payment link details or UPI Autopay / e-mandate (₹5,000 maximum) (P1-B, Pilot Rules #6, #10) |
-| GET | `/api/v1/admin/billing/invoices` · `/{id}/pdf` | SSPL hosting invoices (P1-B) |
-| GET | `/api/v1/admin/billing/wallet` | Messaging wallet balance and usage; pilots see fair-use cap usage (Pilot Rules #5) |
-| POST | `/api/v1/admin/billing/wallet/top-ups` | Messaging wallet top-up for non-pilots (P1-B, CEO-S1) |
+| PUT | `/api/v1/admin/billing/payment-method` | Payment link details or UPI Autopay / e-mandate (₹5,000 maximum, RBI pre-debit notice); adding one moves a Trial tenant to Active (Pricing Rules #5, #7) |
+| GET | `/api/v1/admin/billing/invoices` · `/{id}` · `/{id}/pdf` | SSPL server invoices: one line per server meter with units and slab breakdown, GST, due date, status (Pricing Rule #5) |
+| GET | `/api/v1/admin/billing/wallet` | Wallet balance and transactions; month-to-date count and current slab per notification channel (Pricing Rule #6) |
+| POST | `/api/v1/admin/billing/wallet/top-ups` | Wallet top-up through Razorpay on SSPL's account (Pricing Rule #6) |
+| GET | `/api/v1/admin/billing/usage?month=` | Daily usage per meter for a month: the detail behind an invoice or the month to date (NFR-MTR-01, Pricing Rules #3, #5) |
+| GET | `/api/v1/admin/billing/rate-card` | The rate card version in force: slab table per meter (Pricing Rule #4) |
 
 ### 2.15 Platform (Super Admin)
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/platform/tenants?state=&pilot=&q=` | Tenant list |
+| GET | `/api/v1/platform/tenants?state=&q=` | Tenant list |
 | GET | `/api/v1/platform/tenants/{id}` | Tenant detail |
 | GET | `/api/v1/platform/reviews` · POST `/reviews/{id}/approve` · `/reject` · `/request-changes` | First-publish queue |
 | POST | `/api/v1/platform/tenants/{id}/suspend` · `/reinstate` · `/unpublish` | Enforcement (FR-SA-011, with reason, audited). Suspend and reinstate raise `TenantStateChanged`, which triggers the TenantStateCtaService render (CEO-A1). A repeat suspend is a no-op |
-| POST | `/api/v1/platform/tenants/{id}/trial-extension` · `/credits` | Commercial actions: trial extension, hosting invoice credits (P1-B) |
+| POST | `/api/v1/platform/tenants/{id}/trial-extension` · `/credits` | Commercial actions: trial extension, server invoice credits (Pricing Rules #5, #7) |
 | POST | `/api/v1/platform/tenants/{id}/support-grants` | Request access |
 | POST | `/api/v1/platform/tenants/{id}/deletion` · `/deletion/{id}/approve` | Two-person deletion |
-| POST | `/api/v1/platform/pilots` | Create pilot tenant: business name, city, slug; created in Active with the pilot flag, plus the pre-handover setup grant and an `edge_sync` row. `Idempotency-Key` required; slug taken → 409 (CEO-A2, R19, R17) |
-| POST | `/api/v1/platform/pilots/{tenantId}/owner-invite` | Send or resend the Owner invite (FR-TA-172 flow, Owner role, single use, 72 h); a resend revokes the old link; held while the tenant's edge mapping is pending (CEO-A2) |
-| GET | `/api/v1/platform/pilot-requests` · PATCH `/pilot-requests/{id}` | Pilot requests list and status (CEO-A2) |
-| GET | `/api/v1/platform/pilots/scorecard?month=` · `/scorecard.csv` | Pilot scorecard per pilot per month and roll-up with expansion gate, "as of" time; CSV export (CEO-A4, R20) |
+| POST | `/api/v1/platform/pilots` | Removed in v0.3 (Create pilot removed with the pilot programme; tenants sign up self-serve, Pricing Rule #9) |
+| POST | `/api/v1/platform/pilots/{tenantId}/owner-invite` | Removed in v0.3 (no Owner invite by SSPL, Pricing Rule #9) |
+| GET | `/api/v1/platform/demo-requests` · PATCH `/demo-requests/{id}` | Demo requests list and status (CEO-A2) |
+| GET | `/api/v1/platform/scorecard?month=` · `/scorecard.csv` | Tenant scorecard: all live tenants per month and roll-up with the expansion gate (10 tenants at 10+ paid online bookings for 3 consecutive months), "as of" time; CSV export (CEO-A4, R20) |
 | CRUD | `/api/v1/platform/plans` | Removed in v0.2 (no plans, D1) |
-| GET | `/api/v1/platform/billing/cost-pools` · `/cost-pools/{month}` | Cost pool, service breakdown, tenant shares, run status (held, final) (P1-B, 28A, R2) |
-| GET | `/api/v1/platform/billing/hosting-invoices` · `/dunning` | Finance: hosting invoices, adjustment lines, dunning (P1-B) |
+| GET | `/api/v1/platform/billing/cost-pools` · `/cost-pools/{month}` | Removed in v0.3 (no AWS-cost split; see `/platform/cost-view`, Pricing Rule #10) |
+| GET | `/api/v1/platform/billing/server-invoices` · `/dunning` | Finance: server invoices with lines and slab breakdown, payment status, dunning (Pricing Rules #5, #8; FR-SA-023) |
 | CRUD | `/api/v1/platform/themes` | Theme catalog |
-| GET/PUT | `/api/v1/platform/settings` · `/feature-flags` · `/messaging-rates` | Settings |
+| GET/PUT | `/api/v1/platform/settings` · `/feature-flags` | Settings |
 | GET | `/api/v1/platform/metrics/health` | Health dashboard |
-| GET | `/api/v1/platform/metrics/business` | Sign-ups, trials, conversions, churn, referrals (P1-B, FR-SA-051, CEO-A4) |
-| GET | `/api/v1/platform/metrics/cost-recovery` | Tenant hosting payments against the production AWS bill plus messaging, with SSPL's unrecovered cost (P1-B, CEO-A5) |
+| GET | `/api/v1/platform/metrics/business` | Sign-ups, trials, conversions, churn, referrals (FR-SA-051, CEO-A4) |
+| GET | `/api/v1/platform/metrics/cost-recovery` | Removed in v0.3 (replaced by `/platform/cost-view`, Pricing Rule #10) |
 | GET | `/api/v1/platform/audit-events` | Global audit |
+| GET/POST | `/api/v1/platform/rate-cards` · GET/PUT `/rate-cards/{id}` · POST `/rate-cards/{id}/publish` | Rate card versions (Super Admin edits; Finance views): slab table per meter, `effective_from` the 1st of a month. Only a Draft can be changed; PUT on a Published version → 409. Publish checks every meter has a complete, contiguous slab table and rebuilds the pricing page (Pricing Rule #4, NFR-MTR-02) |
+| GET | `/api/v1/platform/tenants/{id}/usage?month=` | A tenant's daily usage per meter (Super Admin, Finance) (NFR-MTR-01) |
+| GET | `/api/v1/platform/billing/rating-runs` · POST `/rating-runs/{month}/retry` | Rating runs per month: status, tenants rated, invoices issued, failures; retry a failed run, which is idempotent (Pricing Rule #5, NFR-MTR-05) |
+| GET | `/api/v1/platform/cost-view?month=` | SSPL cost view: production AWS cost (CUR 2.0) and messaging-provider cost next to billed server and notification revenue per month (Super Admin; Finance views). Not used for tenant bills (Pricing Rule #10) |
 
 ### 2.16 Internal / edge
 
@@ -250,15 +256,19 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/api/v1/marketing/pilot-requests` | Book-a-demo / pilot request form (FR-MW-008): honeypot, 5 per IP per hour, invisible challenge; validates name, phone (+91 E.164), email, space, city, message ≤ 2,000 characters (400 with inline errors); saves the request before notifying sales through the email outbox; same phone within 24 h updates the existing request; DB unavailable → 503 and no email (CEO-A2) |
+| POST | `/api/v1/marketing/demo-requests` | Book-a-demo form (FR-MW-008): honeypot, 5 per IP per hour, invisible challenge; validates name, phone (+91 E.164), email, space, city, message ≤ 2,000 characters (400 with inline errors); saves the request before notifying sales through the email outbox; same phone within 24 h updates the existing request; DB unavailable → 503 and no email (CEO-A2) |
 
-The pricing page's "last month's actual" number comes from the pricing JSON written after each billing run (P1-B, R12), not from an API call.
+The pricing page shows the rate card version in force (slab tables per meter) and the savings calculator. It is rebuilt when a version is published and when a version takes effect on the 1st (08 §12, Pricing Rule #4), not served by an API call.
 
 ### 2.18 Worker jobs with no HTTP endpoint
 
 | Job | Purpose |
 |-----|---------|
 | EdgeSyncWorker | Single consumer of the `edge_sync` outbox: reads each tenant's current DB pointer and state and writes them to CloudFront KeyValueStore with `UpdateKeys` and `IfMatch`, retrying on 409, batching tenants (08 §6, R17) |
-| MonthlyHostingBilling (P1-B) | On the 10th: CUR 2.0 → CostPool → TenantCostShare → HostingInvoice + payment link; AdjustmentLine for prior-month changes; held with daily retry when the bill is not final (08 §4, R1, R2) |
-| ChargeEstimateService (P1-B) | Daily after the CUR refresh: stores the low/high estimate on CostPool (R15) |
-| Pricing JSON (P1-B) | After each billing run: writes the per-space average share and rebuilds the marketing pricing page (R12) |
+| Request log metering | Daily per IST day: CloudFront standard logs from S3 → host to tenant → request usage in UsageDaily, excluding WAF-blocked, SSPL monitoring and `/api/*` requests (08 §4.1, NFR-MTR-03 to 05) |
+| Storage snapshot | Daily: each tenant's stored media and files for storage units (08 §4.1) |
+| Month-to-date estimate | Daily after metering: units, slab breakdown and estimate for the billing page (Pricing Rule #5) |
+| Rating | 1st of each month (IST), after the last day's metering: previous month's server usage → slabs of the version in force → ServerInvoice + lines + GST → payment link or mandate debit (08 §4.1, Pricing Rules #4, #5) |
+| Pricing page rebuild | When a rate card version is published or takes effect: rebuilds the marketing pricing page from the rate card in force (Pricing Rule #4) |
+| SSPL cost view load | Daily after the CUR 2.0 refresh: PlatformCostMonth for the cost view (Pricing Rule #10) |
+| Server dunning | Daily 06:00 IST: reminders and automatic Restricted / Suspended moves (BRD §7.3, Pricing Rule #8) |

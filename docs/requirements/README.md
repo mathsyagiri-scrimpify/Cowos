@@ -1,6 +1,6 @@
 # Cowos Requirements Pack
 
-Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.2 (2026-11-03): updated to the approved design doc `docs/designs/cowos-platform-v1.md` (hosting cost only, pilot rules, CEO and eng review decisions).
+Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.3 (2026-11-04): updated to the product owner's revision of the approved design doc `docs/designs/cowos-platform-v1.md`. v0.3 replaces the AWS cost share with metered server and notification usage priced in slabs, moves billing, sign-up and the onboarding wizard into the launch, hosts the platform on one app server, and removes the free pilot programme.
 
 New to this work? Read the [handoff notes](../HANDOFF.md) first for current status and next steps.
 

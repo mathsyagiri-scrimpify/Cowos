@@ -1,12 +1,12 @@
 # 05 · User Stories with Acceptance Criteria
 
-> Cowos requirements pack · v0.2 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. A story marked P1-B ships with the Billing release.
+> Cowos requirements pack · v0.3 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. Stories without a phase mark are P1.
 
 ## Epic index
 
 | Epic | Name | Phase |
 |------|------|:---:|
-| E1 | Tenant onboarding (pilot invite at launch, self-serve sign-up at P1-B) | P1 / P1-B |
+| E1 | Tenant sign-up and onboarding (self-serve) | P1 |
 | E2 | Site builder and preview | P1 |
 | E3 | Publishing, versions and domains | P1 |
 | E4 | Inventory, pricing and policies | P1 |
@@ -14,7 +14,7 @@
 | E6 | Customer instant booking | P1 |
 | E7 | Requests, enquiries and tours | P1 |
 | E8 | Booking management and front desk | P1 |
-| E9 | Hosting charge, dunning and suspension | P1 / P1-B |
+| E9 | Metered billing, wallet, dunning and suspension | P1 |
 | E10 | Super Admin and support | P1 |
 | E11 | Existing-website integration | P1 / P2 |
 | E12 | Privacy and data rights | P1 |
@@ -24,34 +24,30 @@
 
 ## E1 · Tenant sign-up and onboarding
 
-**US-1.1 Sign up and start a trial** (FR-MW-005, FR-MW-006, FR-MW-012) · P1-B
+**US-1.1 Sign up and start a trial** (FR-MW-005, FR-MW-006, FR-MW-012, FR-PL-062)
 As a coworking owner, I want to sign up in under 3 minutes so that I can try Cowos without a sales call.
 - **Given** I am on the Cowos sign-up page with `?ref=workloft` in the URL, **when** I submit name, email, mobile, business name, city and slug `acme-hub` and verify both OTPs, **then** a tenant in state `Trial` is created with a 14-day trial end date, referral `workloft` attached, and I land on the onboarding wizard.
 - **Given** the slug `acme-hub` is already taken or reserved, **when** I type it, **then** I see "Not available" within 500 ms and 3 suggested alternatives.
 - **Given** I don't verify my mobile OTP, **when** I try to continue, **then** I can't proceed and can resend the OTP after 30 seconds (max 5 per hour).
-- **Given** the Billing release is not live, **when** anyone opens `/signup` or calls the sign-up API, **then** it returns 404; the pilot request form (FR-MW-008) is the only intake (CEO-S1).
+- **Given** I'm in Trial, **when** I look at Billing, **then** I see that server usage isn't billed during the trial and that notifications need wallet balance from day one (Pricing Rule #7).
 
-**US-1.2 Choose my goal** (FR-TA-001, FR-TA-006) · P1-B
+**US-1.2 Choose my goal** (FR-TA-001, FR-TA-006)
 As a new tenant, I want to say whether I need a full website or only a booking app so that the wizard only asks what I need.
 - **Given** I'm on wizard step 1, **when** I choose "I already have a website", **then** theme and website-content steps are hidden, and an "Integrate with your website" step is added before publish.
 - **Given** I chose booking-only, **when** I later go to Settings → Website, **then** I can switch to the full website at any time without losing data.
 
 **US-1.3 Enter business details with GSTIN** (FR-TA-003)
 As a tenant owner, I want my legal details filled from my GSTIN so that invoices are correct.
-- **Given** I enter a GSTIN with a valid checksum, **when** I tab out of the field, **then** state and PAN are derived and shown for confirmation. From P1-B the legal name is also fetched from the GST public search provider (CEO-S2).
+- **Given** I enter a GSTIN with a valid checksum, **when** I tab out of the field, **then** state and PAN are derived and shown for confirmation, and the legal name is fetched from the GST public search provider for me to confirm or edit.
 - **Given** I enter a GSTIN with an invalid checksum, **when** I tab out, **then** I see "This GSTIN is not valid" and cannot save it.
 - **Given** I have no GSTIN, **when** I tick "I'm not GST registered", **then** I'm asked for PAN and my invoices will be issued as bills of supply without tax lines.
 
-**US-1.4 Resume onboarding later** (FR-TA-001, FR-TA-002) · P1-B
+**US-1.4 Resume onboarding later** (FR-TA-001, FR-TA-002)
 As a busy owner, I want the wizard to save as I go so that I can finish later.
 - **Given** I completed steps 1–4 and closed the browser, **when** I log in again, **then** I return to step 5 with all earlier data saved, and the dashboard checklist shows 4 of 10 steps done.
-
-**US-1.5 Accept my pilot invite and review the setup** (FR-TA-172, FR-TA-009, FR-TA-002, FR-TA-007)
-As a pilot owner, I want to accept SSPL's invite on my phone and see what was set up for me so that I can take over my space's account.
-- **Given** SSPL created my pilot tenant, **when** I open the invite link within 72 hours, **then** my email is verified by the link, I verify my phone by OTP, set a password and MFA, and accept the ToS and DPA myself.
-- **Given** I accepted the invite, **when** I first log in, **then** I see "Review what we set up" with every change SSPL made under the setup grant, then a checklist of my remaining steps (Razorpay, GSTIN/PAN, DNS, ToS/DPA), and SSPL's setup grant has ended.
-- **Given** the invite is more than 72 hours old, or SSPL resent it, **when** I open the old link, **then** I see "This invite has expired. Ask SSPL to resend it." and it can't be used.
 - **Given** my Razorpay connection was marked done, **when** it is disconnected and I open the home page, **then** the checklist item flips back to not done.
+
+**US-1.5** Removed in v0.3 (pilot invite and "Review what we set up" handoff removed with the pilot programme; Owners sign up self-serve, US-1.1, Pricing Rule #9).
 
 ---
 
@@ -85,7 +81,7 @@ As a tenant owner, I want to see my site on desktop and mobile before it goes li
 **US-3.1 First publish with approval** (FR-TA-041, FR-TA-042, FR-SA-010)
 As a tenant owner, I want to publish my site so that customers can find and book me.
 - **Given** all pre-publish checks pass, **when** I click Publish for the first time, **then** the site status becomes "In review · typical under 4 working hours · you can keep editing", and SSPL's queue receives the request (11A).
-- **Given** I'm a pilot and the production entry gate hasn't passed, **when** I open Publish, **then** I see "Your site is ready. Publishing opens when Cowos launches" (Pilot Rules #1, 11A).
+- **Given** I'm in Trial, **when** my site is published, **then** it goes live on the platform subdomain only, marked `noindex`, and custom domains stay locked until I add a payment method (Pricing Rule #7).
 - **Given** my tenant is Suspended, **when** I click Publish, **then** it is rejected with "Your site is suspended. Contact SSPL support." and the reason (CEO-A1).
 - **Given** SSPL approves, **when** the approval is recorded, **then** the site is live on `acme-hub.cowos.site` within 2 minutes and I get an email and WhatsApp with the live link.
 - **Given** SSPL requests changes, **when** I open the admin, **then** I see the reviewer's notes and can republish after fixing.
@@ -225,33 +221,45 @@ As a customer, I want to move my meeting from Tuesday to Wednesday so that I don
 
 ## E9 · Platform billing, dunning and suspension
 
-**US-9.1 Add a payment method to go Active** (FR-TA-176, FR-PL-062, FR-PL-063) · P1-B
+**US-9.1 Add a payment method to go Active** (FR-TA-176, FR-PL-062, FR-PL-063)
 As a trial tenant, I want to add a payment method so that I can use my own domain and get indexed.
 - **Given** I'm in Trial, **when** I add a custom domain, **then** I'm told custom domains need an Active tenant and shown "Add a payment method"; there is no plan picker (28A).
-- **Given** I'm in Trial, **when** I add a payment method (Razorpay payment link details, or UPI Autopay / e-mandate with a ₹5,000 maximum), **then** my tenant becomes `Active` straight away, the domain step unlocks and my site is no longer `noindex`; my first hosting invoice arrives on the 10th of the next month for the days I was counted (Pilot Rules #7, #10).
+- **Given** I'm in Trial, **when** I add a payment method (Razorpay payment link details, or UPI Autopay / e-mandate with a ₹5,000 maximum), **then** my tenant becomes `Active` straight away, the domain step unlocks and my site is no longer `noindex`; my first server invoice arrives on the 1st of the next month, for the server units used since I became Active (Pricing Rules #5, #7).
 
-**US-9.2 Transparent billing page** (FR-TA-175, FR-PL-060, FR-PL-064, FR-MW-003) · P1-B
+**US-9.2 Transparent billing page** (FR-TA-175, FR-PL-064, FR-PL-068, FR-MW-003)
 As a tenant owner, I want to see exactly what I'm paying for so that I trust Cowos.
-- **Given** I open Billing, **when** the page loads, **then** I see my next invoice (issue date 10th, last month's amount, due date, any adjustment line), "0% commission: ₹0 on ₹3,42,000 of bookings", my messaging wallet balance and usage with unit prices, and the AWS breakdown by service category with the tenant count, but never another tenant's usage (5A).
-- **Given** it's mid-month, **when** I open Billing, **then** I see "This month so far: about ₹<low>–<high> · estimate, final on the 10th" from the stored daily estimate (15A, R15).
-- **Given** AWS hasn't finalized last month's bill on the 10th, **when** I open Billing, **then** I see "Waiting for AWS to finalize <month>'s bill" with the expected date, and no invoice is issued until it is final (12A, R1).
-- **Given** I'm a pilot in my free year, **when** I open Billing, **then** I see "Free until <date> · SSPL covered ₹X this month" and no invoice (5A, Pilot Rules #4).
+- **Given** I open Billing, **when** the page loads, **then** I see my latest server invoice (issued on the 1st, due date, amount with GST, status) with one line per server meter showing units and the slab breakdown, "0% commission: ₹0 on ₹3,42,000 of bookings" and my wallet balance, but never another tenant's usage (5A, Pricing Rule #5).
+- **Given** it's mid-month, **when** I open Billing, **then** I see month-to-date units per server meter with the slab breakdown and "This month so far: about ₹<amount> + GST · estimate, final on the 1st", updated daily (15A).
+- **Given** I want to check an invoice line, **when** I open the invoice, **then** I see the daily units per meter behind it (FR-PL-068).
 
-**US-9.3 Restricted after non-payment** (FR-PL-062, FR-PL-012) · P1-B
+**US-9.3 Restricted after non-payment** (FR-PL-062, FR-PL-063, FR-PL-012)
 As SSPL, I want to restrict, not break, a non-paying tenant so that their customers aren't harmed.
-- **Given** a tenant's hosting invoice is 8 days past due, **when** the daily billing job runs, **then** the tenant moves to `Restricted`: the website stays live with every Book CTA switched to "Call / WhatsApp to book" within about 2 minutes and no billing mention to visitors, the booking app home shows the same contact options, existing customers can still view, cancel and download invoices, and the Owner gets email + WhatsApp (10A, R11).
+- **Given** a tenant's server invoice is 8 days past due, **when** the daily billing job runs, **then** the tenant moves to `Restricted`: the website stays live with every Book CTA switched to "Call / WhatsApp to book" within about 2 minutes and no billing mention to visitors, the booking app home shows the same contact options, existing customers can still view, cancel and download invoices, and the Owner gets email + WhatsApp (10A, R11).
 - **Given** the tenant pays, **when** payment is confirmed, **then** state returns to `Active` within 1 minute, online booking resumes, and Book CTAs are restored.
 
-**US-9.4 Suspension and data retention** (FR-PL-062, FR-PL-071, FR-SA-052) · P1-B
+**US-9.4 Suspension and data retention** (FR-PL-062, FR-PL-071, FR-SA-052)
 As a tenant owner who stopped paying, I want my data kept for a while so that I can come back or take it with me.
 - **Given** I'm 22 days past due, **when** the billing job runs, **then** my website shows a page in my theme with my name, address, phone, WhatsApp and "Online booking is temporarily unavailable", and I can still log in to pay or export (10A).
 - **Given** I've been suspended for 90 days, **when** the retention job runs after 3 reminder emails, **then** personal data and content are deleted, tax invoices are archived per retention rules, and SSPL keeps an audit record of the deletion.
 
-**US-9.5 End of my pilot year** (FR-PL-062, FR-TA-175, FR-TA-176) · P1-B
-As a pilot owner, I want clear notice before my free year ends so that I can decide to keep going without surprises.
-- **Given** my free period ends on 30 Nov, **when** 60, 30 and 7 days are left, **then** I get a notice each time with the expected first charge, and with the 60-day notice I'm asked to add a payment method (Pilot Rules #6, 12A).
-- **Given** my free year ended, **when** the 10th of month 14 arrives, **then** I receive my first hosting invoice, for month 13 (Pilot Rules #6, R1).
-- **Given** I haven't paid that first invoice by its due date plus 14 days, **when** the billing job runs, **then** my tenant becomes `Restricted` and stays Restricted for 90 days before the normal Suspended lifecycle; my website stays live and existing bookings, invoices and export keep working (Pilot Rules #6).
+**US-9.5** Removed in v0.3 (end of the pilot free year removed with the pilot programme; every tenant's server usage is billed once it becomes Active, Pricing Rule #7).
+
+**US-9.6 Slab-priced server invoice** (FR-PL-060, FR-PL-066, FR-PL-067, FR-TA-175)
+As a tenant owner, I want my server usage priced in slabs like an electricity bill so that I can check every line.
+- **Given** the request-unit slabs in force for October are units 1–100 at ₹0 and 101 upwards at ₹P per unit, and I used 250 request units in October, **when** the invoice is issued on 1 November, **then** the request line shows 100 units × ₹0 and 150 units × ₹P, GST is added, and the due date is 11 November (Pricing Rules #4, #5).
+- **Given** SSPL published a new rate card effective 1 November, **when** October is invoiced, **then** the October version is used.
+- **Given** my stored media and files were 2 GB for the first 15 days and 4 GB for the last 16 days of a 31-day month, **when** the month is rated, **then** my storage units are the average of the daily snapshots, about 3.03 GB-month (Pricing Rule #3).
+- **Given** WAF blocked 5,000 requests to my site, **when** request units are counted, **then** those requests are not counted, nor are SSPL's health checks and monitoring (Pricing Rule #3).
+- **Given** I was in Trial from 3 to 16 October and became Active on 17 October, **when** October is invoiced, **then** only units from 17 October onwards are billed (Pricing Rule #7).
+
+**US-9.7 Notification wallet with slab prices** (FR-PL-042, FR-PL-040, FR-TA-180)
+As a tenant owner, I want each message priced by my monthly count so that I know what notifications cost.
+- **Given** the WhatsApp slabs are messages 1–500 at ₹A and 501 upwards at ₹B, and I've sent 500 WhatsApp messages this month, **when** the 501st is sent, **then** my wallet is debited ₹B in the same transaction that sets the count to 501, and the wallet page shows the count and slab 2 for WhatsApp (Pricing Rules #4, #6, R4).
+- **Given** a WhatsApp message fails and its SMS fallback is sent, **when** both are counted, **then** each counts once on its own meter (Pricing Rule #3).
+- **Given** my balance is ₹0, **when** a booking confirmation is due by WhatsApp or SMS, **then** it goes by email only, and Billing and the wallet page show "Customers now get email-only notifications · Top up".
+- **Given** my balance is ₹0, **when** a customer signs in by phone OTP, **then** the OTP is sent and my balance goes below zero, down to a floor of −₹500 (Pricing Rule #6).
+- **Given** a new calendar month starts (IST), **when** the first message of the month is sent on any channel, **then** it is priced at that channel's slab 1.
+- **Given** my balance covers one more WhatsApp message, **when** two WhatsApp notifications are sent at the same moment, **then** only one debit succeeds, the other goes by email, and the balance never drops below ₹0 (R4).
 
 ---
 
@@ -273,27 +281,32 @@ As a Super Admin, I want to take down a site that is collecting money fraudulent
 - **Given** a verified fraud report, **when** I suspend the tenant with reason "Fraud", **then** within about 2 minutes the website shows the suspended page in the tenant's theme ("Online booking is temporarily unavailable" with the tenant's contact details), new payments can't start, the tenant is notified, and the action is logged with my identity (10A, CEO-A1).
 - **Given** the owner's publish was rendering when I suspended, **when** that render finishes, **then** it is discarded and the suspended page stays live; the owner's next publish attempt is rejected while Suspended (CEO-A1).
 - **Given** the issue is resolved, **when** I reinstate the tenant, **then** the normal site is restored within about 2 minutes.
-- **Given** it is before the Billing release, **when** anyone tries to move a tenant into Trial, PastDue or Restricted, **then** the API returns 409 (Q1).
 
-**US-10.4 Create and set up a pilot tenant** (FR-SA-055, FR-SA-056, FR-SA-057, FR-TA-172)
-As SSPL's pilot onboarding owner, I want to create a pilot's tenant and set it up before the owner joins so that the owner starts from a working site.
-- **Given** a pilot request in "Pilot requests", **when** I open Pilots → Create pilot and submit business name, city and slug `workloft`, **then** a tenant is created in `Active` with the pilot flag, the action is audited, and the Owner invite is sent (single-use, 72 hours).
-- **Given** I double-click Create, **when** both submits arrive, **then** only one tenant is created; **given** `workloft` is taken, **then** I see "Slug taken".
-- **Given** the tenant has no Owner, is unpublished and has no live payments, **when** I add inventory, theme and content under the pre-handover setup grant, **then** each write is allowed and audited.
-- **Given** the Owner has accepted the invite, **when** I try another write, **then** it is rejected with "Ask the owner for a support grant", and I need an Owner-approved grant (FR-SA-030) (R19).
-- **Given** I resend the invite, **when** the owner opens the old link, **then** it no longer works.
+**US-10.4** Removed in v0.3 (Create pilot tenant, Owner invite by SSPL and the pre-handover setup grant removed with the pilot programme; Owners sign up self-serve, US-1.1, Pricing Rule #9).
 
-**US-10.5 Triage pilot requests** (FR-MW-008, FR-SA-057)
-As SSPL sales, I want every pilot request saved where I can see it so that no owner is lost.
-- **Given** an owner submits the Book a demo form, **when** the email to sales fails, **then** the request is still in "Pilot requests" with an "Email to sales failed" badge (CEO-A2).
+**US-10.5 Triage demo requests** (FR-MW-008, FR-SA-055, FR-SA-057)
+As SSPL sales, I want every demo request saved where I can see it so that no owner is lost.
+- **Given** an owner submits the Book a demo form, **when** the email to sales fails, **then** the request is still in Tenants → Demo requests with an "Email to sales failed" badge (CEO-A2).
 - **Given** a bot fills the hidden honeypot field, or the same IP sends a 6th request within an hour, **when** it submits, **then** it is rejected and nothing is saved.
 - **Given** a message contains `<script>`, **when** I open the request, **then** it shows as plain text.
 
-**US-10.6 Track pilot success** (FR-SA-058)
-As SSPL, I want each pilot's paid online bookings per month so that I know whether the expansion gate is met.
-- **Given** a pilot had 12 customer-made online bookings paid in March, of which 1 was later fully refunded, plus 2 staff-created bookings, **when** I open the scorecard, **then** March shows 11 for that pilot.
+**US-10.6 Track tenant success** (FR-SA-058)
+As SSPL, I want each live tenant's paid online bookings per month so that I know whether the success criteria and the expansion gate are met.
+- **Given** a tenant had 12 customer-made online bookings paid in March, of which 1 was later fully refunded, plus 2 staff-created bookings, **when** I open the tenant scorecard, **then** March shows 11 for that tenant.
 - **Given** a payment captured at 00:01 IST on 1 April, **when** the scorecard counts it, **then** it counts in April, not March (R20).
-- **Given** 10 pilots have had 10 or more paid online bookings in each of the last 3 months, **when** I open the roll-up, **then** "Expansion gate met" shows yes, and I can export the scorecard as CSV (CEO-A4).
+- **Given** 10 tenants in the beachhead city have had 10 or more paid online bookings in each of the last 3 months, **when** I open the roll-up, **then** "Expansion gate met" shows yes, and I can export the scorecard as CSV (CEO-A4).
+- **Given** 30 active tenants, 18 of them at 10 or more paid online bookings this month, **when** I open the roll-up, **then** it shows 60% of active tenants at 10 or more (G2).
+
+**US-10.7 Edit the rate card** (FR-SA-020, FR-MW-003, FR-MW-013)
+As SSPL, I want to set slab prices per meter in one place so that tenant bills, wallet debits and the pricing page all use the same prices.
+- **Given** I create a version effective 1 January with a slab table for each of the six meters (server request units, server storage units, OTP SMS, other SMS, WhatsApp, email), **when** I publish it, **then** the publish is audited with my name, the pricing page shows it from 1 January, and December's invoices and wallet debits still use the December version (Pricing Rule #4).
+- **Given** a slab table with a gap or an overlap, or more than one open-ended slab, **when** I publish, **then** it is rejected with the meter and the slab named.
+- **Given** slab 1 for email is 1–1,000 at ₹0, **when** I publish, **then** it is accepted as a free allowance.
+- **Given** a version already in force, **when** I try to change a price in it, **then** I can't; I create a new version from a later 1st.
+
+**US-10.8 Compare cost with billed revenue** (FR-SA-022, FR-PL-069)
+As SSPL, I want actual AWS and messaging-provider cost next to billed revenue each month so that I can set slab prices.
+- **Given** last month's CUR 2.0 data and provider charges are loaded, **when** I open the cost view, **then** I see production AWS cost by service, messaging cost per channel, billed server and wallet revenue, and the difference; no tenant's bill is computed from this view (Pricing Rule #10).
 
 ---
 

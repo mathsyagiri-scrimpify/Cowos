@@ -1,6 +1,6 @@
 # 01 · Product Vision & Scope
 
-> Cowos requirements pack · v0.2 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
+> Cowos requirements pack · v0.3 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
 
 ## 1. Vision statement
 
@@ -24,8 +24,8 @@ Independent coworking operators (1–3 centres, 20–300 seats) run their busine
 | Goal | Measure | Target (12 months after MVP launch) |
 |------|---------|-------------------------------------|
 | G1. Fast time to value | Median time from sign-up to published site | Under 2 hours of tenant effort; under 1 day elapsed (including first-publish approval) |
-| G2. Tenants get real direct bookings | % of active tenants with ≥10 paid online bookings/month | ≥60% |
-| G3. Cost recovery for SSPL (CEO-A5) | Paying tenants; share of the production AWS bill and messaging cost covered by tenant hosting payments, tracked monthly from the cost pool after the Billing release (P1-B), with SSPL's unrecovered cost (staging, dev, pilot year, team) shown alongside | 150 paying tenants; by launch + 18 months, tenant hosting payments cover 100% of the production AWS bill and messaging cost |
+| G2. Tenants get real direct bookings | % of active tenants with ≥10 paid online bookings/month, from the tenant scorecard (CEO-A4) | ≥60% by month 6 after launch |
+| G3. Cost recovery for SSPL (CEO-A5) | Paying tenants; billed server and notification revenue against SSPL's production AWS and messaging-provider cost, tracked monthly in the Super Admin cost view (Pricing Rule #10) | 150 paying tenants; billed server and notification revenue covers SSPL's production AWS and messaging-provider cost by launch + 18 months |
 | G4. Retention | Monthly logo churn | ≤3% |
 | G5. Badge-driven growth | % of new sign-ups attributed to "Powered by Cowos" referrals | ≥15% |
 | G6. Trust | % of tenants who can correctly describe what they pay for (survey) | ≥90% |
@@ -34,7 +34,7 @@ Independent coworking operators (1–3 centres, 20–300 seats) run their busine
 
 | Segment | Description | Role in Cowos |
 |---------|-------------|---------------|
-| Tenant: independent operator | Owner-run space, 1 location, 20–100 seats, no website or a basic one | Primary buyer; the beachhead and pilot segment (00 §4) |
+| Tenant: independent operator | Owner-run space, 1 location, 20–100 seats, no website or a basic one | Primary buyer; the beachhead segment (00 Q1) |
 | Tenant: growing operator | 2–5 locations, 100–500 seats, small team, some existing tools | Same product and charge as every tenant (D1) |
 | Tenant: hybrid business | Business centre, serviced office, cafe with a meeting room, incubator | Uses meeting room + day pass products |
 | Tenant staff | Community manager, front-desk executive | Daily user of Tenant Admin |
@@ -51,7 +51,7 @@ Independent coworking operators (1–3 centres, 20–300 seats) run their busine
 | | Aggregator / marketplace | Cowos |
 |---|---|---|
 | Who owns the customer | Aggregator | Tenant |
-| Fee | Commission or listing fee per lead/booking | Your share of the real AWS hosting cost plus messaging at cost, **0% commission** (D1) |
+| Fee | Commission or listing fee per lead/booking | Metered server usage and notifications, priced in published slabs, **0% commission** (D1) |
 | Branding | Aggregator's brand; your space is one of many listings | Your logo, colours and domain |
 | Competitors shown next to you | Yes | Never |
 | Payment settlement | Aggregator collects and pays out on its schedule | Straight to your bank via your own Razorpay account |
@@ -64,10 +64,10 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 
 | | Global coworking software | Cowos |
 |---|---|---|
-| Price | USD pricing per location/member | INR, hosting cost share only: about ₹1,250–2,250 per tenant per month at 20 tenants, about ₹100–400 at 200+ [estimated] (D1) |
+| Price | USD pricing per location/member | INR, metered server usage and notifications only, at slab prices shown on the pricing page (D1, Pricing Rules #3–#6) |
 | India fit | Card-first, no GST/DLT/WhatsApp defaults | UPI, GST invoices with customer GSTIN, DLT SMS, WhatsApp |
 | Website | Usually "bring your own" or a basic portal | Full SEO-ready website + booking app included |
-| Setup | Days to weeks, consultant-led | Guided wizard, under 2 hours (P1-B); SSPL sets up pilots (00 §4) |
+| Setup | Days to weeks, consultant-led | Self-serve sign-up and guided wizard, under 2 hours (4A, Pricing Rule #9) |
 | Depth | Deep (access control, accounting integrations, community features) | Focused on website + bookings + payments + invoices first |
 
 ### 5.3 For end customers
@@ -82,13 +82,13 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 
 | Application | Summary |
 |-------------|---------|
-| Cowos Marketing Web App | Product site, pricing with the "0% commission" promise and last month's actual per-space hosting share (28A), Book-a-demo / pilot request form, savings calculator, sign-up, demo tenant sites, blog/SEO pages, referral attribution |
-| Tenant Admin Portal | Onboarding wizard, site builder (themes + sections), inventory and pricing, bookings calendar, leads, customers and companies, memberships, payments and invoices, domain and publishing, hosting cost billing page with the AWS breakdown (5A), staff and roles, reports |
+| Cowos Marketing Web App | Product site, pricing with the "0% commission" promise and the current rate card (slab tables per meter) (28A, Pricing Rule #5), Book-a-demo form, savings calculator, sign-up, demo tenant sites, blog/SEO pages, referral attribution |
+| Tenant Admin Portal | Onboarding wizard, site builder (themes + sections), inventory and pricing, bookings calendar, leads, customers and companies, memberships, payments and invoices, domain and publishing, billing page with units per meter, slab breakdown and a daily month-to-date estimate, notification wallet page (5A, Pricing Rules #5, #6), staff and roles, reports |
 | Tenant Website | Pre-rendered, SEO-ready, themed website per tenant |
 | Tenant Booking App | Responsive (later PWA) booking experience per tenant: browse, check availability, book, pay, manage bookings, invoices, memberships |
 | Embeddable integration | Subdomain link (MVP), script widget (Phase 2), WordPress plugin (Phase 3) |
-| Cowos Super Admin Portal | Tenant management, KYC and first-publish approval, Pilots page (create pilot, pilot requests, scorecard), hosting cost billing (cost pool, invoices, billing runs), support tools (audited support access), theme catalog, platform settings, monitoring dashboards |
-| Platform services | Notifications (email, SMS, WhatsApp), payment gateway adapters, invoicing engine, background jobs, domain/SSL automation, media pipeline, audit logging |
+| Cowos Super Admin Portal | Tenant management, KYC and first-publish approval, Demo requests and the tenant scorecard (CEO-A2, CEO-A4), rate card, server invoices and rating runs, dunning, SSPL cost view (Pricing Rules #4, #5, #10), support tools (audited support access), theme catalog, platform settings, monitoring dashboards |
+| Platform services | Usage metering (request, storage and notification units), rating, notifications (email, SMS, WhatsApp), payment gateway adapters, invoicing engine, background jobs, domain/SSL automation, media pipeline, audit logging |
 
 ### 6.2 Out of scope (v1 and the foreseeable roadmap unless noted)
 
@@ -97,7 +97,7 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 | Free-form drag-and-drop website builder | Section-based themes cover the need; see BRD §6 |
 | Per-tenant native iOS/Android apps | PWA instead (C9) |
 | SSPL collecting or splitting customer payments | Direct-to-tenant settlement (C4) |
-| Subscriptions, plan tiers, plan fees and plan limits | Tenants pay only their hosting cost share and messaging at cost; every tenant gets every feature (D1, Pilot Rules #2) |
+| Subscriptions, plan tiers, plan fees and plan limits | Tenants pay only metered server usage and notifications; every tenant gets every feature (D1, Pricing Rule #2) |
 | Full accounting (ledger, P&L, payroll) | Export to Tally/Zoho Books (Phase 3 integrations) |
 | Physical access control hardware | Phase 3 integration with existing vendors only (no hardware) |
 | Marketplace / discovery listing of all Cowos tenants | Possible Phase 3 opt-in "Cowos Network"; would need a separate pricing decision, not commission |
@@ -118,6 +118,8 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 | A7 | Tenants' GSTIN is optional (small spaces below the GST threshold exist) | Invoices without GSTIN render as "Bill of Supply" / receipt, no tax lines |
 | A8 | All data stays in AWS India regions (Mumbai primary, Hyderabad DR) | Matches DPDP expectations and tenant comfort |
 | A9 | .NET 10 (LTS, released Nov 2025) is the "latest LTS" at build time | Update to the next LTS when available; no design change |
+| A10 | Tenants accept a metered, slab-priced bill when they can see the daily usage behind it (Pricing Rules #3–#5) | Bill disputes and churn. The billing page shows daily usage per meter, and WAF-blocked requests are excluded (13 R29, R30) |
+| A11 | One app server carries the platform's admin, booking and API load for the year-1 tenant count (00 Q6) (Rule #11) | Resize the server, or move to more than one instance. The availability target is open (13 OQ25, R28) |
 
 ## 8. Product principles
 

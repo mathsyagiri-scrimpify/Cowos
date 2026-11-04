@@ -1,6 +1,6 @@
 # 02 · Personas, Roles & Permissions
 
-> Cowos requirements pack · v0.2 draft
+> Cowos requirements pack · v0.3 draft
 
 ## 1. Personas
 
@@ -26,15 +26,15 @@
 - **Wants:** book the boardroom for client meetings using the plan's included hours, invoices with the company GSTIN, add/remove team members.
 
 ### P5. Kiran, SSPL Super Admin
-- Platform operations lead. Creates pilot tenants and sends Owner invites, triages pilot requests, watches the pilot scorecard, approves first publishes, handles escalations, watches platform health (CEO-A2, CEO-A4). From the Billing release, also runs the monthly hosting billing with Finance (D1, P1-B).
+- Platform operations lead. Triages demo requests, watches the tenant scorecard, approves first publishes, handles escalations, watches platform health (CEO-A2, CEO-A4). Maintains the rate card (slab boundaries and prices per meter) and reads the SSPL cost view to set prices. Oversees the monthly server billing with Finance (D1, Pricing Rules #4, #5, #10).
 
 ### P6. Divya, SSPL Support Executive
 - Answers tenant tickets ("my domain isn't working", "Razorpay not connecting"). Needs to see a tenant's configuration and, with the tenant's permission, view their admin as they see it.
 - **Must not:** see customers' personal data or payment details without an approved, time-limited support grant.
 
 ### P7 (recommended addition). Anil, SSPL Finance
-- Manages hosting invoices, held billing runs, adjustment lines, failed hosting payments, GST filing data for SSPL's hosting invoices, and refunds of hosting charges (D1, Pilot Rules #10, P1-B).
-- Recommended as a separate role so Support can't issue hosting credits and Finance can't impersonate tenants.
+- Manages server invoices, rating runs, failed server-invoice payments, wallet top-ups, GST filing data for SSPL's invoices, and credits or refunds of SSPL charges. Answers tenant questions about a bill from the daily usage detail behind it (D1, Pricing Rules #5, #6).
+- Recommended as a separate role so Support can't issue billing credits and Finance can't impersonate tenants.
 
 ## 2. Role definitions
 
@@ -42,8 +42,8 @@
 |------|-------|-------------|----------------|
 | Super Admin | Whole platform | SSPL (max 3 people) | SSO (Google Workspace / Entra ID) + hardware key or TOTP MFA, IP allowlist |
 | SSPL Support | Whole platform, read-mostly | Super Admin | SSO + MFA |
-| SSPL Finance (recommended) | Hosting billing only (P1-B) | Super Admin | SSO + MFA |
-| Tenant Owner | One tenant (all locations) | Pilots (launch): Super Admin Owner invite on Create pilot (CEO-A2). Non-pilots: self sign-up from the Billing release (CEO-S1, P1-B). Exactly one per tenant; transferable | Email + password + mandatory TOTP or email OTP MFA; Google sign-in optional |
+| SSPL Finance (recommended) | SSPL billing only: usage, server invoices, wallets | Super Admin | SSO + MFA |
+| Tenant Owner | One tenant (all locations) | Self sign-up on cowos.in from launch (FR-MW-005, Pricing Rule #9). Exactly one per tenant; transferable | Email + password + mandatory TOTP or email OTP MFA; Google sign-in optional |
 | Tenant Manager (recommended addition) | One tenant, chosen locations | Tenant Owner | Email + password + MFA |
 | Tenant Staff / Front desk | One tenant, chosen locations | Tenant Owner or Manager | Email or phone OTP; MFA optional |
 | Customer | One tenant's booking app | Self (sign-up) or staff-created | Phone OTP (primary) or email OTP / magic link |
@@ -51,28 +51,28 @@
 
 Tenant Manager is recommended because operators with 2+ locations need a centre manager who can run operations and pricing for their centre without owning billing or the website.
 
-There are no paid tiers. Every tenant gets every feature, so no permission depends on a plan (D1, Pilot Rules #2).
+There are no paid tiers. Every tenant gets every feature, so no permission depends on a plan (D1, Pricing Rule #2).
 
 ## 3. Permissions matrix
 
-Legend: ✅ full · 👁 view only · 🔒 only with an active support grant (time-limited, audited): tenant-approved after handover, or the pre-handover setup grant before a pilot has an Owner (R19, §3.3 rule 6) · 📍 limited to assigned locations · ⚙ own records only · — no access
+Legend: ✅ full · 👁 view only · 🔒 only with an active, tenant-approved support grant (time-limited, audited; §3.3 rule 3) · 📍 limited to assigned locations · ⚙ own records only · — no access
 
 ### 3.1 Platform-level capabilities
 
 | Capability | Super Admin | SSPL Support | SSPL Finance | Tenant Owner | Tenant Manager | Tenant Staff | Customer |
 |------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| View list of all tenants, status, pilot flag | ✅ | 👁 | 👁 | — | — | — | — |
-| Create pilot tenant (Active, pilot flag) and send the Owner invite (CEO-A2) | ✅ | — | — | — | — | — | — |
-| View and triage pilot requests from the Book-a-demo form (CEO-A2) | ✅ | — | — | — | — | — | — |
-| View pilot scorecard and export CSV (CEO-A4) | ✅ | — | — | — | — | — | — |
-| Set up a pilot before handover (pre-handover setup grant, R19) | 🔒 | 🔒 | — | — | — | — | — |
+| View list of all tenants and their status | ✅ | 👁 | 👁 | — | — | — | — |
+| Create pilot tenant and send the Owner invite | Removed in v0.3 (pilot programme removed; tenants sign up self-serve, Pricing Rule #9) | | | | | | |
+| View and triage demo requests from the Book-a-demo form (CEO-A2) | ✅ | — | — | — | — | — | — |
+| View tenant scorecard (all live tenants) and export CSV (CEO-A4) | ✅ | — | — | — | — | — | — |
+| Set up a pilot before handover (pre-handover setup grant) | Removed in v0.3 (R19 removed with the pilot programme) | | | | | | |
 | Approve / reject first publish (KYC) | ✅ | ✅ | — | — | — | — | — |
 | Unpublish / suspend a tenant site | ✅ | — (can request) | — | — | — | — | — |
-| Reactivate a suspended tenant | ✅ | — | ✅ (after payment, P1-B) | — | — | — | — |
+| Reactivate a suspended tenant | ✅ | — | ✅ (after payment) | — | — | — | — |
 | Delete a tenant (after retention period) | ✅ (two-person approval) | — | — | — | — | — | — |
-| Manage platform plans and prices | Removed in v0.2 (no plans; hosting cost only, D1) | | | | | | |
-| View cost pools, billing runs and hosting invoices (28A, P1-B) | ✅ | — | ✅ | — | — | — | — |
-| Issue hosting invoice credits / refunds (P1-B) | ✅ | — | ✅ | — | — | — | — |
+| Manage platform plans and prices | Removed in v0.2 (no plans or subscription, D1) | | | | | | |
+| View a tenant's usage detail (daily units per meter), rating runs and server invoices (28A, Pricing Rules #3, #5) | ✅ | — | ✅ | — | — | — | — |
+| Issue server invoice credits / refunds (Pricing Rule #5) | ✅ | — | ✅ | — | — | — | — |
 | Manage theme catalog | ✅ | 👁 | — | — | — | — | — |
 | Platform settings (messaging providers, feature flags) | ✅ | — | — | — | — | — | — |
 | View platform health dashboards | ✅ | ✅ | — | — | — | — | — |
@@ -81,6 +81,8 @@ Legend: ✅ full · 👁 view only · 🔒 only with an active support grant (ti
 | View tenant configuration (theme, inventory, domains) | ✅ | ✅ | — | ✅ | 👁 | — | — |
 | View tenant's customer personal data | 🔒 | 🔒 | — | ✅ | 📍 | 📍 | ⚙ |
 | View global audit log | ✅ | 👁 | — | — | — | — | — |
+| Edit and publish rate card versions (slab boundaries and prices per meter, effective from the 1st of a month) (Pricing Rule #4) | ✅ | — | 👁 | — | — | — | — |
+| View the SSPL cost view (actual AWS and messaging-provider cost next to billed revenue per month) (Pricing Rule #10) | ✅ | — | 👁 | — | — | — | — |
 
 ### 3.2 Tenant-level capabilities
 
@@ -92,7 +94,8 @@ Legend: ✅ full · 👁 view only · 🔒 only with an active support grant (ti
 | Publish / roll back website | ✅ | ✅ (if granted) | — | — | Super Admin can unpublish only |
 | Connect domains | ✅ | — | — | — | 🔒 (assist) |
 | Connect / disconnect payment gateway | ✅ | — | — | — | — (never sees keys) |
-| Manage hosting billing: payment method (payment link details or UPI Autopay / e-mandate), messaging wallet top-up (D1, Pilot Rules #10, P1-B) | ✅ | — | — | — | Finance: 👁 |
+| Manage SSPL billing: payment method (payment link or UPI Autopay / e-mandate), pay server invoices, notification wallet top-up (D1, Pricing Rules #5, #6) | ✅ | — | — | — | Finance: 👁 |
+| View usage per meter (units, slab breakdown, daily month-to-date estimate, daily detail behind each invoice), server invoices and the wallet statement (month-to-date count and current slab per channel) (Pricing Rules #5, #6) | ✅ | — | — | — | Finance: 👁 |
 | Invite / remove staff, assign roles | ✅ | 📍 (Staff only) | — | — | — |
 | Create / edit locations | ✅ | 📍 (edit) | — | — | 🔒 |
 | Create / edit spaces, resources, photos | ✅ | 📍 | — | — | 🔒 |
@@ -122,9 +125,10 @@ Legend: ✅ full · 👁 view only · 🔒 only with an active support grant (ti
 ### 3.3 Permission rules
 1. Permissions are evaluated server-side on every request. The UI hides actions, but the API is the source of truth.
 2. Tenant roles are a fixed set in MVP. Phase 2 adds per-permission toggles on top of roles (e.g. "Manager without refund rights").
-3. Support access ("🔒") once the tenant has an Owner: Support requests access with a ticket reference and reason → Tenant Owner approves in-app or by email link → grant lasts up to 24 hours, read-only by default, write access needs a separate approval → every action is logged with both identities ("Divya (SSPL Support) acting for Workloft"). The tenant sees active grants and can revoke them. Tenant-approved grants apply after handover (R19, Pilot Rules #9).
+3. Support access ("🔒"): Support requests access with a ticket reference and reason → Tenant Owner approves in-app or by email link → grant lasts up to 24 hours, read-only by default, write access needs a separate approval → every action is logged with both identities ("Divya (SSPL Support) acting for Workloft"). The tenant sees active grants and can revoke them. This is the only way SSPL helps set up or change a tenant (Pricing Rule #9).
 4. Super Admin can suspend or unpublish without a grant (platform safety), but cannot read customer personal data without one, except where legally required, which is logged as a "break-glass" action and reviewed weekly.
 5. No SSPL role can see a tenant's payment gateway secrets. They are encrypted with a KMS key that only the payment service's IAM role can use.
-6. Pre-handover setup grant (R19): Create pilot also creates a setup grant with write access, so SSPL can set up inventory, theme and content before the owner's first login (Pilot Rules #9). The grant is valid only while the tenant has no Owner, is unpublished and has no live payments. It ends automatically when the Owner accepts the invite. Every write is audited, and the first-login handoff screen lists those changes ("Review what we set up", 11A). After handover, rule 3 applies.
-7. Owner invite for pilots (CEO-A2): the invite reuses the staff invite flow (FR-TA-172) with the Owner role. The link is single use and expires after 72 hours; a resend revokes the old link. Accepting verifies the email by the link and the phone by OTP; the owner sets the password and MFA and accepts the ToS and DPA. Creating the pilot and sending the invite are audited like FR-SA-011.
-8. In pilot onboarding the owner does Razorpay KYC and OAuth, GSTIN/PAN, DNS changes and ToS/DPA acceptance personally; SSPL's setup covers inventory, theme and content (Pilot Rules #9).
+6. Removed in v0.3 (pre-handover setup grant R19 removed with the pilot programme; SSPL helps only through rule 3 grants, Pricing Rule #9).
+7. Removed in v0.3 (Owner invite by SSPL removed with the pilot programme; Owners sign up self-serve, Pricing Rule #9).
+8. Removed in v0.3 (pilot split of onboarding duties removed with the pilot programme).
+9. Billing permissions follow the metered model (Pricing Rules #3-#6): only the Tenant Owner manages the payment method, pays server invoices and tops up the wallet; Managers and Staff see no SSPL billing data. Only Super Admin edits and publishes rate card versions. A published version is not edited; a change is a new version effective from the 1st of a later month (Pricing Rule #4).

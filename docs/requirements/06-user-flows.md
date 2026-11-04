@@ -1,46 +1,19 @@
 # 06 · Key User Flows
 
-> Cowos requirements pack · v0.2 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
+> Cowos requirements pack · v0.3 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
 
-## Flow 1 · Owner onboarding → build → preview → publish
+## Flow 1 · Owner sign-up → wizard → preview → publish
 
-There are two paths. At launch (P1), every tenant is a pilot created by SSPL in Super Admin (Flow 1a). Public self-serve sign-up and the onboarding wizard arrive with the Billing release (P1-B, Flow 1b) (CEO-S1, CEO-S2). Both paths end in the same pre-publish checks, review and publish steps (Flow 1c). No path has a plan picker or a subscription checkout (D1, 28A).
+There is one path: the owner signs up self-serve on cowos.in, completes the onboarding wizard (Flow 1a), then runs the pre-publish checks, review and publish (Flow 1b). It is available from launch (Pricing Rule #9). The "Book a demo" form on cowos.in stays as a lead channel: requests go to Super Admin → Tenants → Demo requests, and SSPL follows up (CEO-A2). There is no plan picker or subscription checkout (D1, 28A).
 
-### Flow 1a · Pilot path (P1)
-
-```mermaid
-flowchart TD
-    A[Owner submits Book a demo /<br/>pilot request on cowos.in] --> B[Saved to Super Admin<br/>Pilots → Pilot requests<br/>sales notified via email outbox]
-    B --> C[SSPL triages request]
-    C --> D[Pilots → Create pilot:<br/>business name, city, slug, pilot flag]
-    D --> E[Tenant created: state = Active, is_pilot<br/>pre-handover setup grant created<br/>edge_sync row added<br/>action audited]
-    E --> F[SSPL sets up under the setup grant:<br/>inventory, theme, content<br/>every write audited]
-    E --> G[Owner invite sent<br/>single use, 72h]
-    G --> H{Owner opens link<br/>within 72h?}
-    H -- No / resent --> I[This invite has expired.<br/>Ask SSPL to resend it.] --> G
-    H -- Yes --> J[Email verified by link<br/>phone OTP, password, MFA<br/>owner accepts ToS + DPA]
-    J --> K[Setup grant ends automatically]
-    K --> L[First-login handoff:<br/>Review what we set up<br/>list of SSPL's audited changes]
-    L --> M[Owner checklist on home:<br/>Razorpay KYC + OAuth, GSTIN/PAN,<br/>DNS, ToS/DPA]
-    M --> N[Owner finishes settings screens<br/>SSPL helps only through<br/>Owner-approved support grants]
-    N --> P[To Flow 1c: pre-publish checks]
-```
-
-Key rules (pilot path):
-- Pilots are created directly in Active with a pilot flag. Trial expiry, trial publish rules and dunning never apply. The free year starts at the first live publish on production and ends 12 months later (Pilot Rules #3, #4).
-- The pre-handover setup grant gives SSPL write access only while the tenant has no Owner, is unpublished and has no live payments. It ends when the Owner accepts the invite. After handover SSPL works only through tenant-approved grants (FR-SA-030) (R19, Pilot Rules #9).
-- The owner does Razorpay KYC and OAuth, GSTIN/PAN, DNS changes, and accepts the ToS and DPA themselves (Pilot Rules #9).
-- Until the production entry gate passes, the publish screen shows "Your site is ready. Publishing opens when Cowos launches". The gate blocks only publishing and live payments (Pilot Rules #1, 11A).
-- Double submit of Create pilot creates one tenant (idempotency key); a taken slug returns 409. A resend revokes the old invite link (CEO A2).
-
-### Flow 1b · Self-serve path (P1-B)
+### Flow 1a · Sign-up and onboarding wizard
 
 ```mermaid
 flowchart TD
     A[Visitor on cowos.in<br/>ref code captured] --> B[Sign up: name, email, mobile,<br/>business, city, slug]
     B --> C{Email + mobile<br/>OTP verified?}
     C -- No --> B
-    C -- Yes --> D[Tenant created: state = Trial<br/>14 days]
+    C -- Yes --> D[Tenant created: state = Trial<br/>14 days, edge_sync row added]
     D --> E{Goal?}
     E -- Full website + booking --> F[Business details + GSTIN]
     E -- Booking app only --> F2[Business details + GSTIN]
@@ -51,15 +24,16 @@ flowchart TD
     F2 --> K[Inventory: products, units,<br/>prices, availability, add-ons<br/>Sample items removable in one click]
     K --> L[Policies: cancellation, refund,<br/>privacy, terms]
     L --> N[Payments: connect Razorpay<br/>MFA set up inline]
-    N --> P[To Flow 1c: pre-publish checks]
+    N --> P[To Flow 1b: pre-publish checks]
 ```
 
-Key rules (self-serve path):
-- The wizard order follows 4A. Sample inventory is labelled "Sample"; pre-publish checks block publishing while any sample item remains (FR-TA-008).
-- Trial tenants can publish to the platform subdomain, marked `noindex`. A tenant becomes Active when it adds a payment method (Razorpay payment link details, or UPI Autopay / e-mandate up to ₹5,000) at the end of the trial; custom domains and indexing then unlock without waiting for the first arrears invoice (Pilot Rules #7, 28A).
+Key rules (sign-up and wizard):
+- The wizard order follows 4A. Each step auto-saves; the home checklist shows what remains (FR-TA-002). Sample inventory is labelled "Sample"; pre-publish checks block publishing while any sample item remains (FR-TA-008).
+- The owner does Razorpay KYC and OAuth, GSTIN/PAN, DNS changes, and accepts the ToS and DPA themselves. SSPL helps only through Owner-approved support grants (FR-SA-030, Pricing Rule #9).
+- Trial tenants can publish to the platform subdomain, marked `noindex`. In Trial, server usage is not billed and notifications need wallet balance from day one. A tenant becomes Active when it adds a payment method (Razorpay payment link details, or UPI Autopay / e-mandate up to ₹5,000); custom domains and indexing then unlock without waiting for the first arrears invoice (Pricing Rule #7, 28A).
 - If Razorpay KYC is pending, the owner can still publish with Book a tour, Request to Book and offline payment; Instant Book products show as "Request" until Razorpay is live (33A).
 
-### Flow 1c · Pre-publish checks → review → publish (both paths)
+### Flow 1b · Pre-publish checks → review → publish
 
 ```mermaid
 flowchart TD
@@ -67,8 +41,7 @@ flowchart TD
     P -- Fail --> Q[Fix links] --> O
     P -- Pass --> ST{Tenant state}
     ST -- Suspended --> SX[Your site is suspended.<br/>Contact SSPL support.]
-    ST -- Pilot before production gate --> SG[Your site is ready.<br/>Publishing opens when Cowos launches]
-    ST -- Trial, P1-B --> S
+    ST -- Trial, platform subdomain only, noindex --> S
     ST -- Active --> R{Domain choice}
     R -- Platform subdomain --> S{First publish?}
     R -- Own domain --> V[DNS instructions per registrar<br/>TXT verify + CNAMEs<br/>MFA inline if not done]
@@ -86,11 +59,10 @@ flowchart TD
 Key rules (publish):
 - Domain verification runs in the background. The tenant can publish on the platform subdomain while waiting.
 - The live-pointer switch re-reads tenant state in the same transaction, so a publish that finishes after a suspension never puts the normal site back (CEO-A1). The edge learns of the switch only through the edge_sync outbox (R17).
-- A pilot's first live publish on production sets its free-period end date (Pilot Rules #3).
 
 ## Flow 2 · Existing-website integration (booking app only)
 
-The "I already have a website" goal choice is a wizard step and arrives with the wizard at P1-B (FR-TA-006, CEO-S2).
+The "I already have a website" goal choice is wizard step 1 (FR-TA-006).
 
 ```mermaid
 flowchart TD
@@ -175,7 +147,7 @@ Edge cases handled:
 | Payment fails | Hold released immediately; customer can retry with a new hold |
 | Webhook arrives before client verify | Same idempotency key (gateway payment id); second call is a no-op |
 | Gateway down | App offers Request to Book (9A) |
-| Tenant in `Restricted` state (P1-B) | Hold creation refused; booking app shows "Call / WhatsApp to book" with the tenant's contacts (10A) |
+| Tenant in `Restricted` state | Hold creation refused; booking app shows "Call / WhatsApp to book" with the tenant's contacts (10A) |
 | Tenant `Suspended` | Website shows the suspended page; no new holds (10A, CEO-A1) |
 
 ## Flow 4 · Cancellation and refund
@@ -211,21 +183,24 @@ Notes:
 - Gateway fees are not returned by Razorpay. Whether the customer refund deducts them is a tenant policy setting and is shown in the policy text.
 - Monthly bookings and memberships don't use this flow; they follow notice-period rules handled by staff (Phase 2 automates it).
 
-## Flow 5 · Tenant states: hosting invoice lapse → restriction → suspension → deletion
+## Flow 5 · Metered billing and tenant states
+
+Flow 5a shows the tenant states. Flow 5b shows how server usage becomes a monthly invoice. Flow 5c shows how each notification is counted and debited from the wallet. All of it runs from launch (Pricing Rules #3 to #8).
+
+### Flow 5a · Tenant states: trial → active → unpaid server invoice → restriction → suspension → deletion
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Active: Create pilot (P1, pilot flag)
-    [*] --> Trial: self-serve sign-up (P1-B)
+    [*] --> Trial: self-serve sign-up
     Trial --> Active: payment method added
     Trial --> Expired: trial ends with no payment method
     Expired --> Active: payment method added (within 30 days)
     Expired --> PendingDeletion: 30 days
-    Active --> PastDue: hosting invoice unpaid on due date
+    Active --> PastDue: server invoice unpaid on due date
     PastDue --> Active: paid
-    PastDue --> Restricted: day 8 (unconverted pilot - day 14)
+    PastDue --> Restricted: day 8
     Restricted --> Active: paid
-    Restricted --> Suspended: day 22 (unconverted pilot - after 90 days Restricted)
+    Restricted --> Suspended: day 22
     Suspended --> Active: paid
     Suspended --> PendingDeletion: 90 days suspended
     Active --> Cancelled: owner closes account
@@ -238,25 +213,76 @@ stateDiagram-v2
 ```
 
 Key rules:
-- **At launch (P1)** the only transitions are Create pilot (into Active with the pilot flag), FR-SA-011 suspend and reinstate. Super Admin offers no move into Trial, PastDue or Restricted, and the API rejects one with 409 until the Billing release (P1-B) enables trials and dunning (Q1, CEO-S1).
-- Pilots stay Active through the free year: no payment method, trial expiry or dunning applies. The free year runs 12 months from the first live publish on production (Pilot Rules #3, #4).
-- From month 13 a former pilot pays its hosting cost share; month 13 is invoiced on the 10th of month 14. A pilot that hasn't paid that first invoice by its due date plus 14 days is unconverted: it moves to Restricted and stays there for 90 days before the normal Suspended lifecycle. A former pilot that pays and then misses a later invoice follows the standard schedule (Pilot Rules #6).
-- Hosting invoices are issued on the 10th for the previous month and are due in 10 days (Pilot Rules #10, R1).
+- Sign-up creates the tenant in Trial for 14 days. In Trial, server usage is not billed and notifications need wallet balance from day one. Adding a payment method makes the tenant Active (Pricing Rule #7).
+- Server invoices are issued on the 1st for the previous calendar month (IST) and are due in 10 days. Unpaid invoices follow the BRD §7.3 schedule from launch: PastDue on the due date, Restricted at day 8, Suspended at day 22, then retention and deletion (Pricing Rules #5, #8).
+- Super Admin suspends and reinstates manually with a reason (FR-SA-011); the other moves come from sign-up, payment-method and dunning events.
 - Every state change raises one TenantStateChanged event; the website switch for Restricted and Suspended goes through the data-refresh render in FR-PL-012 (R11, CEO-A1).
 
 What each state allows:
 
 | State | Website | Booking app: new bookings | Booking app: existing customers | Tenant admin | Notifications |
 |-------|---------|--------------------------|-------------------------------|--------------|---------------|
-| Trial (P1-B) | Live on platform subdomain (`noindex`) | Yes | Yes | Full (custom domain locked) | Day 10–14 reminders |
-| Active | Live | Yes | Yes | Full | Monthly hosting invoice on the 10th; pilots: free-year notices at 60, 30 and 7 days |
-| PastDue (days 0–7, P1-B) | Live | Yes | Yes | Full + banner | Daily |
-| Restricted (days 8–21, P1-B) | Live; every Book CTA becomes "Call / WhatsApp to book", with no billing mention (10A) | **No**: booking app home shows the tenant's call/WhatsApp options | View, cancel, invoices | Read-only + billing, exports, booking management | Every 2 days |
-| Suspended (day 22+, P1-B) | Page in the tenant's theme with name, address, phone, WhatsApp, "Online booking is temporarily unavailable" and the badge (10A) | No | View bookings, download invoices | Billing, export, cancel only | Day 30, 60, 80 |
-| Expired (trial ended with no payment method, P1-B) | Offline | No | View | Billing + export | Day 1, 7, 25 |
-| Cancelled (P1-B) | Live until period end, then as Suspended | Until period end | Yes | Until period end, then billing/export | Export reminders |
+| Trial | Live on platform subdomain (`noindex`) | Yes | Yes | Full (custom domain locked) | Day 10–14 reminders |
+| Active | Live | Yes | Yes | Full | Monthly server invoice on the 1st |
+| PastDue (days 0–7) | Live | Yes | Yes | Full + banner | Daily |
+| Restricted (days 8–21) | Live; every Book CTA becomes "Call / WhatsApp to book", with no billing mention (10A) | **No**: booking app home shows the tenant's call/WhatsApp options | View, cancel, invoices | Read-only + billing, exports, booking management | Every 2 days |
+| Suspended (day 22+) | Page in the tenant's theme with name, address, phone, WhatsApp, "Online booking is temporarily unavailable" and the badge (10A) | No | View bookings, download invoices | Billing, export, cancel only | Day 30, 60, 80 |
+| Expired (trial ended with no payment method) | Offline | No | View | Billing + export | Day 1, 7, 25 |
+| Cancelled | Live until period end, then as Suspended | Until period end | Yes | Until period end, then billing/export | Export reminders |
 | SuspendedByAdmin | Suspended page in the tenant's theme, as Suspended (10A, CEO-A1) | No | No | Owner can see the reason and contact SSPL; publish blocked | Immediate |
 | PendingDeletion → Deleted | Offline, DNS mapping removed | No | No | No | Final notice 7 days before purge |
+
+### Flow 5b · Metering and monthly server invoice
+
+```mermaid
+flowchart TD
+    A[CloudFront standard logs to S3<br/>website + booking-app hosts] --> B[Daily job: map host to tenant<br/>drop WAF-blocked and SSPL monitoring<br/>count 2xx/304 page views and /api/* calls<br/>per IST day]
+    B --> D[(UsageDaily<br/>tenant, meter, date, units)]
+    E[Daily storage snapshot<br/>GB of media and files per tenant] --> D
+    D --> F[Daily estimate: rate month-to-date units<br/>with the rate card in force]
+    F --> G[Billing page: units per meter,<br/>slab breakdown, This month so far]
+    D --> H[1st of the month, IST: rating job<br/>sum last month's units per server meter<br/>leave out Trial days]
+    RC[(Rate card version in force<br/>slab table per meter)] --> F
+    RC --> H
+    H --> I[Apply slabs telescopically<br/>ServerInvoice + one line per server meter<br/>units, slab breakdown, GST]
+    I --> J[Invoice to Owner by email + WhatsApp<br/>due in 10 days]
+    J --> K{Payment method}
+    K -- Payment link --> L[Owner pays by Razorpay link]
+    K -- UPI Autopay / e-mandate --> M[RBI pre-debit notice<br/>then charge, max ₹5,000]
+    L --> N{Paid by due date?}
+    M --> N
+    N -- Yes --> O[Invoice paid · tenant stays Active]
+    N -- No --> P[PastDue → dunning per Flow 5a]
+```
+
+Key rules (server billing):
+- 1 request unit = 1,000 requests; 1 storage unit = 1 GB-month, the average of the month's daily snapshots (Pricing Rule #3).
+- Slabs apply telescopically: units in slab 1 at the slab-1 price, the next units at the slab-2 price, and so on. Counts reset at the start of each calendar month (IST). A slab price can be ₹0 (Pricing Rule #4).
+- The invoice uses the rate card version in force for the month the usage happened, never a later one (Pricing Rule #4).
+- Usage records are kept so the Owner can see the daily units behind every invoice line (FR-PL-068).
+- CUR 2.0 is loaded only for SSPL's cost view (FR-SA-022); it is never used to bill tenants (Pricing Rule #10).
+
+### Flow 5c · Notification wallet debit
+
+```mermaid
+flowchart TD
+    A[Message to send<br/>OTP SMS, other SMS, WhatsApp or email] --> B[One transaction:<br/>count + 1 on the channel's MonthlyMeterCount<br/>price = slab price for the new count]
+    B --> C{Balance minus price<br/>at or above the floor?}
+    C -- Yes --> D[Debit wallet, write WalletTransaction<br/>commit count and debit together]
+    D --> E[Send message]
+    C -- No, SMS or WhatsApp notification --> F[Roll back · send by email instead]
+    F --> B
+    C -- No, OTP or email below −₹500 --> G[Open question: which messages stop]
+    E --> H{WhatsApp failed?}
+    H -- Yes --> I[SMS fallback: counted and debited<br/>on the other SMS meter]
+    I --> B
+    H -- No --> J[Done]
+```
+
+Key rules (wallet):
+- Floors: ₹0 for SMS and WhatsApp notifications; −₹500 for OTPs and emails. What stops at the −₹500 floor is an open question (Pricing Rule #6).
+- A WhatsApp message followed by its SMS fallback counts once on each meter (Pricing Rule #3).
+- The wallet page shows the month-to-date count and current slab per channel (FR-TA-180). Minimum top-up ₹500.
 
 ## Flow 6 · Request to Book (event space)
 
