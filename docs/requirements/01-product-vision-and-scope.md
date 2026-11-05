@@ -1,6 +1,6 @@
 # 01 · Product Vision & Scope
 
-> Cowos requirements pack · v0.3 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
+> Cowos requirements pack · v0.4 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
 
 ## 1. Vision statement
 
@@ -51,7 +51,7 @@ Independent coworking operators (1–3 centres, 20–300 seats) run their busine
 | | Aggregator / marketplace | Cowos |
 |---|---|---|
 | Who owns the customer | Aggregator | Tenant |
-| Fee | Commission or listing fee per lead/booking | Metered server usage and notifications, priced in published slabs, **0% commission** (D1) |
+| Fee | Commission or listing fee per lead/booking | The tenant's choice of a Fixed plan (flat monthly fee, unlimited use within message fair use) or a Usage plan (metered server usage and notifications in published slabs); **0% commission** (D1, Pricing Rule #12) |
 | Branding | Aggregator's brand; your space is one of many listings | Your logo, colours and domain |
 | Competitors shown next to you | Yes | Never |
 | Payment settlement | Aggregator collects and pays out on its schedule | Straight to your bank via your own Razorpay account |
@@ -64,7 +64,7 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 
 | | Global coworking software | Cowos |
 |---|---|---|
-| Price | USD pricing per location/member | INR, metered server usage and notifications only, at slab prices shown on the pricing page (D1, Pricing Rules #3–#6) |
+| Price | USD pricing per location/member | INR: a Fixed plan or a Usage plan, both with every feature, at the prices shown on the pricing page (D1, Pricing Rules #3–#6, #12) |
 | India fit | Card-first, no GST/DLT/WhatsApp defaults | UPI, GST invoices with customer GSTIN, DLT SMS, WhatsApp |
 | Website | Usually "bring your own" or a basic portal | Full SEO-ready website + booking app included |
 | Setup | Days to weeks, consultant-led | Self-serve sign-up and guided wizard, under 2 hours (4A, Pricing Rule #9) |
@@ -97,7 +97,7 @@ Positioning point: Cowos is **complementary** to aggregators in year 1. Tenants 
 | Free-form drag-and-drop website builder | Section-based themes cover the need; see BRD §6 |
 | Per-tenant native iOS/Android apps | PWA instead (C9) |
 | SSPL collecting or splitting customer payments | Direct-to-tenant settlement (C4) |
-| Subscriptions, plan tiers, plan fees and plan limits | Tenants pay only metered server usage and notifications; every tenant gets every feature (D1, Pricing Rule #2) |
+| Feature tiers and plan limits | Both plans (Fixed and Usage) include every feature; plans differ only in how SSPL charges (D1, Pricing Rules #2, #12) |
 | Full accounting (ledger, P&L, payroll) | Export to Tally/Zoho Books (Phase 3 integrations) |
 | Physical access control hardware | Phase 3 integration with existing vendors only (no hardware) |
 | Marketplace / discovery listing of all Cowos tenants | Possible Phase 3 opt-in "Cowos Network"; would need a separate pricing decision, not commission |

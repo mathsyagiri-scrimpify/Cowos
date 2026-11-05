@@ -1,6 +1,6 @@
 # 02 · Personas, Roles & Permissions
 
-> Cowos requirements pack · v0.3 draft
+> Cowos requirements pack · v0.4 draft
 
 ## 1. Personas
 
@@ -70,7 +70,7 @@ Legend: ✅ full · 👁 view only · 🔒 only with an active, tenant-approved 
 | Unpublish / suspend a tenant site | ✅ | — (can request) | — | — | — | — | — |
 | Reactivate a suspended tenant | ✅ | — | ✅ (after payment) | — | — | — | — |
 | Delete a tenant (after retention period) | ✅ (two-person approval) | — | — | — | — | — | — |
-| Manage platform plans and prices | Removed in v0.2 (no plans or subscription, D1) | | | | | | |
+| Manage platform plans and prices | Super Admin sets the Fixed plan fee, allowances and slab prices in the rate card (FR-SA-020); the tenant Owner chooses Fixed or Usage (FR-TA-182) | | | | | | |
 | View a tenant's usage detail (daily units per meter), rating runs and server invoices (28A, Pricing Rules #3, #5) | ✅ | — | ✅ | — | — | — | — |
 | Issue server invoice credits / refunds (Pricing Rule #5) | ✅ | — | ✅ | — | — | — | — |
 | Manage theme catalog | ✅ | 👁 | — | — | — | — | — |

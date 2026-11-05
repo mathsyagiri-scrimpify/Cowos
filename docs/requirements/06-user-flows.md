@@ -1,6 +1,6 @@
 # 06 · Key User Flows
 
-> Cowos requirements pack · v0.3 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
+> Cowos requirements pack · v0.4 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
 
 ## Flow 1 · Owner sign-up → wizard → preview → publish
 
@@ -22,7 +22,8 @@ flowchart TD
     I --> H[Branding: logo, colours,<br/>font pair, button shape, mode]
     H --> K
     F2 --> K[Inventory: products, units,<br/>prices, availability, add-ons<br/>Sample items removable in one click]
-    K --> L[Policies: cancellation, refund,<br/>privacy, terms]
+    K --> SM[Seat map: pick a template,<br/>paint desks, cabins, rooms,<br/>assign seats, publish map<br/>optional, can be done later]
+    SM --> L[Policies: cancellation, refund,<br/>privacy, terms]
     L --> N[Payments: connect Razorpay<br/>MFA set up inline]
     N --> P[To Flow 1b: pre-publish checks]
 ```
@@ -30,7 +31,8 @@ flowchart TD
 Key rules (sign-up and wizard):
 - The wizard order follows 4A. Each step auto-saves; the home checklist shows what remains (FR-TA-002). Sample inventory is labelled "Sample"; pre-publish checks block publishing while any sample item remains (FR-TA-008).
 - The owner does Razorpay KYC and OAuth, GSTIN/PAN, DNS changes, and accepts the ToS and DPA themselves. SSPL helps only through Owner-approved support grants (FR-SA-030, Pricing Rule #9).
-- Trial tenants can publish to the platform subdomain, marked `noindex`. In Trial, server usage is not billed and notifications need wallet balance from day one. A tenant becomes Active when it adds a payment method (Razorpay payment link details, or UPI Autopay / e-mandate up to ₹5,000); custom domains and indexing then unlock without waiting for the first arrears invoice (Pricing Rule #7, 28A).
+- The seat map step (Pricing Rule #13, FR-TA-068) offers templates first and can be skipped; products without a map work as plain pools and unit lists. Painting desks and blocks creates the units, so owners who draw a map need not type units in the inventory step.
+- Trial tenants can publish to the platform subdomain, marked `noindex`. In Trial nothing is billed and notifications need wallet balance from day one. A tenant becomes Active when it chooses a plan (Fixed or Usage, Pricing Rule #12) and adds a payment method (Razorpay payment link details, or UPI Autopay / e-mandate up to ₹5,000); custom domains and indexing then unlock without waiting for the first arrears invoice (Pricing Rule #7, 28A).
 - If Razorpay KYC is pending, the owner can still publish with Book a tour, Request to Book and offline payment; Instant Book products show as "Request" until Razorpay is live (33A).
 
 ### Flow 1b · Pre-publish checks → review → publish
@@ -101,11 +103,17 @@ sequenceDiagram
     API-->>BA: start times with price and text availability
     BA->>C: Start-times list ("10:00 – 12:00 · ₹1,416")
     C->>BA: Choose 10:00 – 12:00, Continue
+    opt Product has a seat map (Seat choice Optional or Required)
+        BA->>API: GET /public/seat-maps/{id}/availability?start&end
+        API-->>BA: layout + free / booked / out of service per seat
+        BA->>C: Choose your seat (map or List view), or Any available seat
+        C->>BA: Tap A1 (turns gold), Continue
+    end
     BA->>C: Step 1 summary: slot, total, "Pay to (tenant legal name)",<br/>"incl. GST ₹216 ▸", one-line cancellation policy
     C->>BA: Continue
     BA->>C: Step 2 phone OTP (if not logged in)<br/>privacy notice, unticked marketing consent, bill-to-company
     C->>BA: Verify OTP
-    BA->>API: POST /public/bookings/holds {unit or any, start, end, addOns, coupon}
+    BA->>API: POST /public/bookings/holds {unit or any, seatIds, start, end, addOns, coupon}
     API->>DB: INSERT booking status=Held, expires_at=now+10m<br/>(exclusion constraint blocks overlaps)
     alt Slot taken during OTP
         DB-->>API: constraint violation
@@ -244,7 +252,7 @@ flowchart TD
     D --> H[1st of the month, IST: rating job<br/>sum last month's units per server meter<br/>leave out Trial days]
     RC[(Rate card version in force<br/>slab table per meter)] --> F
     RC --> H
-    H --> I[Apply slabs telescopically<br/>ServerInvoice + one line per server meter<br/>units, slab breakdown, GST]
+    H --> I[Usage plan: apply slabs telescopically, one line per server meter<br/>Fixed plan: one Fixed plan line, prorated only in first and last month<br/>no plan period for a billable day: hold + alert (R3-E1)<br/>GST added]
     I --> J[Invoice to Owner by email + WhatsApp<br/>due in 10 days]
     J --> K{Payment method}
     K -- Payment link --> L[Owner pays by Razorpay link]

@@ -1,6 +1,6 @@
 # 07 · Non-Functional Requirements
 
-> Cowos requirements pack · v0.3 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked.
+> Cowos requirements pack · v0.4 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked.
 
 ## 1. Multi-tenancy and data isolation
 
@@ -63,6 +63,7 @@
 | NFR-PERF-03 | Tenant website page weight (home, excluding hero media); self-hosted fonts count against it (25A) | ≤ 300 KB transferred; JS ≤ 50 KB gzip |
 | NFR-PERF-04 | Booking app main JS bundle (excluding theme shell chunks), checked in CI (R13) | ≤ 200 KB gzip; route-level code splitting |
 | NFR-PERF-05 | Booking app time to interactive on a mid-range Android on 4G (Moto G Power class, simulated) | ≤ 3.5 s |
+| NFR-PERF-07 | Seat map in the booking app: a 40 × 60 map with live availability is interactive within 1 s of the time being chosen on the same mid-range Android; the seat map code loads as its own chunk, outside the NFR-PERF-04 main bundle | ≤ 1 s |
 | NFR-PERF-06 | Public API latency (availability, holds) | p95 ≤ 300 ms, p99 ≤ 800 ms at design load |
 | NFR-PERF-07 | Admin API latency | p95 ≤ 500 ms |
 | NFR-PERF-08 | Publish time (click → live) for a typical site | ≤ 2 minutes p95 |
@@ -137,6 +138,7 @@
 | NFR-A11Y-07 | Respects `prefers-reduced-motion`; no auto-playing video with sound; hero video has pause control. |
 | NFR-A11Y-08 | Automated axe-core checks in CI for every launched theme (including its booking shell) and the booking flow; manual screen reader pass (NVDA + TalkBack) on the booking flow each release and before each theme release. Launch ships 2 themes; themes 3-4 pass Lighthouse, axe and the screen reader pass before release (CEO-S3, 27A). |
 | NFR-A11Y-09 | Touch targets ≥ 44×44 px in booking app. |
+| NFR-A11Y-10 | Seat maps (FR-BA-013, FR-TA-068): seat state is shown by colour plus a pattern or icon and in the seat's accessible name ("A3, window, free"), never by colour alone; a List view offers every seat choice the map offers; arrow keys move between seats on the map and Enter or Space picks one; a picked or lost seat is announced through an `aria-live` region. |
 
 ## 9. SEO for tenant websites
 

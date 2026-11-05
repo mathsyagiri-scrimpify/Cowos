@@ -1,6 +1,6 @@
 # 13 · Risks, Open Questions & Decisions
 
-> Cowos requirements pack · v0.3 draft
+> Cowos requirements pack · v0.4 draft
 
 Note: other pack files cite engineering review decisions from `docs/designs/cowos-platform-v1.md` as "(R1)"–"(R20)". This file writes them "eng R1"–"eng R20" so they are not confused with the risks R1–R30 below. "Pricing Rule #n" refers to the Pricing and Billing Rules #1–#11 in the same design doc.
 
@@ -10,7 +10,7 @@ Likelihood (L) and Impact (I): H / M / L.
 
 | ID | Risk | L | I | Mitigation | Owner |
 |----|------|:-:|:-:|------------|-------|
-| R1 | **Slab prices don't cover SSPL's cost.** SSPL's revenue depends on the slab prices it sets for server usage and notifications | M | H | No longer an accepted risk (revised 2026-11-04): SSPL sets the slab prices, which may include a margin (Premise 5, D1). The Super Admin cost view shows actual AWS and messaging-provider cost next to billed revenue each month, so SSPL can adjust the rate card (Pricing Rules #4, #10). G3 tracks cost recovery (CEO-A5) | Leadership |
+| R1 | **Plan prices don't cover SSPL's cost.** SSPL's revenue depends on the Fixed plan fee, its message allowances and the slab prices it sets; a very busy Fixed tenant can cost more than its fee | M | H | No longer an accepted risk (revised 2026-11-04): SSPL sets every price, which may include a margin (Premise 5, D1). Fixed plan messages are capped by the allowances, and server usage is still counted for every tenant, so the Super Admin cost view shows each Fixed tenant's real cost next to its fee; SSPL can raise the fee or allowances in a new rate card version (Pricing Rules #4, #10, #12). G3 tracks cost recovery (CEO-A5) | Leadership |
 | R2 | **One EC2 per tenant** makes cost per tenant too high and operations unmanageable beyond ~50 tenants | H | H | Shared multi-tenant pool, hybrid-ready cells (00 §C2) | Architecture |
 | R3 | **Cross-tenant data leak** in a shared database | M | H | Two-layer isolation (EF filters + forced RLS), isolation test suite gating CI, tenant from host/token only, pen test | Engineering |
 | R4 | **Razorpay Partner approval / OAuth access delayed** | M | H | Apply in sprint 0; API-key fallback; offline/Request modes allow launch without gateway | Product |
@@ -31,7 +31,7 @@ Likelihood (L) and Impact (I): H / M / L.
 | R19 | **Messaging costs** (WhatsApp/SMS) exceed expectations for tenants as wallet spend | M | M | Prepaid wallet with a conditional debit (eng R4), per-channel slab prices and month-to-date counts on the wallet page (Pricing Rule #6), per-event channel toggles, WhatsApp-first for OTP where cheaper, monitoring | Finance |
 | R20 | **Suspending sites harms tenants' customers** and creates disputes | M | M | Restricted state keeps existing bookings working; neutral suspended page with tenant contacts (BRD §7.3) | Product |
 | R21 | **Node renderer** adds a second runtime to a .NET team | L | L | Small, stateless service; shared theme packages with admin preview; documented ownership | Architecture |
-| R22 | **Team capacity**: 5-month MVP is tight for the listed scope. Billing, metering, the rate card, sign-up and the wizard are back in launch scope, adding roughly 3 weeks of 1 BE + 1 FE and about 1.5 weeks of FE [estimated, from the CEO review] | H | H | Cut list ready (12 §5), including the themes 3–4 deferral (CEO-S3); weekly scope review; launch date and the production entry gate stay fixed (Pricing Rule #1) | PM |
+| R22 | **Team capacity**: the full scope (6 apps, both plans, seat maps) is large for a small team. The owner chose a small team using Claude Code, with a launch target of week 20 (14) [estimated] | H | H | Thin end-to-end slices, weekly demos, re-plan after sprint 3 on real pace; cut list in 14 §6 and 12 §5; slow approvals started in week 1 (14 §5); the production entry gate stays fixed (Pricing Rule #1) | PM |
 | R23 | **"Powered by SSPL" badge** does little for acquisition | M | L | "Powered by Cowos" with referral tracking (00 §C6) | Marketing |
 | R24 | **Image licensing / third-party content** on tenant sites | L | M | Terms make tenant responsible; takedown process; stock image library with licensed images in themes | Legal |
 | R25 | Removed in v0.3 (the pilot programme and its free year are removed, so SSPL carries no pilot-year cost) | | | | |
@@ -40,12 +40,13 @@ Likelihood (L) and Impact (I): H / M / L.
 | R28 | **Single app server outage** takes down the admin portals, booking app and API for all tenants. Deploys may also cause a few minutes of downtime | M | H | Tenant websites stay up on S3 + CloudFront; automatic instance recovery, an infrastructure-as-code rebuild path and health alarms; managed PostgreSQL with backups and point-in-time recovery (Pricing Rule #11). Availability target and deploy downtime are open (OQ25) | Engineering / DevOps |
 | R29 | **Tenants dispute metered bills** they don't understand or don't expect | M | M | Billing page shows units per meter, the slab breakdown, a daily month-to-date estimate and the daily usage behind each invoice; WAF-blocked requests and SSPL monitoring are excluded (Pricing Rules #3, #5); rate card published on the pricing page | Product / Finance |
 | R30 | **Bot traffic inflates request units**: crawlers and scrapers that pass WAF count as billable requests | M | M | WAF-blocked requests are excluded (Pricing Rule #3); whether known bots that pass WAF are billed is open (OQ22); daily usage detail lets a tenant see spikes | Engineering / Product |
+| R31 | **Seat map builder is harder to use than planned**: owners give up half way, or draw maps that don't match real seats, so customers pick seats that don't exist | M | H | Templates first, auto-labelling, "Preview as customer" before publish, validation on save (C13); test the builder with 3 early tenant owners in M3b before launch; SSPL can build a map under an Owner-approved support grant (Rule #9); "Seat choice: Off" keeps a plain pool for owners who don't want a map | Product |
 
 ## 2. Open questions
 
 | ID | Question | Why it matters | Default if unanswered |
 |----|----------|----------------|----------------------|
-| OQ1 | Final plan prices and limits | Marketing site, billing build | **Resolved by D1 (revised 2026-11-04):** there are no plans or limits. Tenants pay metered server usage and notifications at slab prices SSPL sets (00 §C1). The slab prices themselves are OQ21 |
+| OQ1 | Final plan prices and limits | Marketing site, billing build | **Resolved by D1 (revised 2026-11-04, revision 2):** two plans, Fixed and Usage, both with every feature and no limits other than the Fixed plan's message allowances (00 §C1, Pricing Rule #12). The amounts themselves are OQ35 and OQ21 |
 | OQ2 | Will SSPL add a margin on messaging (handling fee), or pass through at cost? | Transparency message, wallet pricing | **Resolved by D1 (revised 2026-11-04):** notifications are priced per channel in slabs that SSPL sets, which may include a margin; a ₹0 slab gives a free allowance. Paid from a prepaid wallet; OTPs and emails are debited like other messages, down to −₹500 (Pricing Rules #4, #6) |
 | OQ3 | Refund policy for SSPL charges | Terms, billing logic | Updated for D1: plan fees no longer exist, so the annual pro-rata option no longer applies. Monthly server invoices: non-refundable |
 | OQ4 | Is badge removal ever sold? | Growth vs revenue | Not in v1; revisit with data |
@@ -56,7 +57,7 @@ Likelihood (L) and Impact (I): H / M / L.
 | OQ9 | Who owns theme design: in-house or agency? | Quality of the first impression | Contract one agency for 4 themes |
 | OQ10 | Do launch tenants already exist (warm leads)? | Launch milestone of 10 tenants live (Pricing Rule #1) | Unknown. Default: recruit in the beachhead city (OQ16) from sprint 0, through owner interviews and the "Book a demo" form (CEO-A2) |
 | OQ11 | Should customers be able to pay "at the venue" for Instant Book products? | Booking modes, no-show risk | Off by default; tenant can enable per product |
-| OQ12 | Assisted onboarding: free, paid, or both? Does a paid setup service still fit D1 ("no subscription, plan fee or commission")? | Revenue, support load | Paid one-time setup (e.g. ₹2,999) as in BRD BR-05, through a tenant-approved support grant (Pricing Rule #9). The v0.1 "free for annual plans" option is removed (no plans, D1) |
+| OQ12 | Assisted onboarding: free, paid, or both? Does a paid setup service still fit D1? | Revenue, support load | Paid one-time setup (e.g. ₹2,999) as in BRD BR-05, through a tenant-approved support grant (Pricing Rule #9). The v0.1 "free for annual plans" option is removed (no plans, D1) |
 | OQ13 | Do we need Telugu/Hindi in the booking app for Phase 1? | Localisation effort | No; English only, strings externalised |
 | OQ14 | Data retention period for inactive customer data | DPDP compliance | 3 years after last activity, tenant-configurable within legal bounds |
 | OQ15 | GST treatment of SSPL's own service (SAC, place of supply) | Platform invoices | Confirm with CA during sprint 0 |
@@ -79,14 +80,16 @@ Likelihood (L) and Impact (I): H / M / L.
 | OQ32 | Do wallet top-ups and debits carry GST, and how is it invoiced? | Wallet, GST returns | Resolved for the UI 2026-11-04 (DR2-11A): wallet gets the typed amount, GST added on top with a GST invoice per top-up; CA to confirm |
 | OQ33 | How long are raw CloudFront logs (which hold visitor IP addresses) kept after metering? | DPDP compliance | Not decided; needs counsel |
 | OQ34 | Do Super Admin and support-grant requests count as the tenant's request units? | Fair bills | Resolved 2026-11-04 (eng re-review 3, R22): only customer-facing tenant hosts are metered; admin and support traffic is not |
+| OQ35 | What are the Fixed plan fee and its monthly message allowances per channel (Pricing Rule #12)? | Pricing page, sample bills, rating, wallet | Not decided. The product owner sets them on the rate card before launch (by week 12 of the build plan), together with the slab prices (OQ21) |
+| OQ36 | Are 10 seat maps per location and 40 × 60 cells per map enough (Rule #13)? | Seat map builder, performance budget | Default used in this pack; confirm with the largest beachhead spaces in M3b |
 
 ## 3. Decision log
 
-Status: **Proposed** until you approve. Change the status column as you decide. D1 and D2 are Decided; D3–D16 are still Proposed.
+Status: **Proposed** until you approve. Change the status column as you decide. D1 and D2 are Decided (D1 revised again on 2026-11-04 to add the Fixed and Usage plans); D3–D16 are still Proposed. The build plan (14 §1) uses the recommended defaults unless they are changed by the end of build week 1.
 
 | ID | Decision | Options | Recommendation | Status | Needed by |
 |----|----------|---------|----------------|--------|-----------|
-| D1 | Commercial model | (a) Pass-through server cost (b) Flat plans + 0% commission (c) Commission-based | v0.1 recommended (b). On 2026-11-02 the owner chose (a) as a share of the production AWS bill plus messaging at cost. **Revised 2026-11-04:** tenants pay only metered server usage (request and storage units) and notifications (OTP SMS, other SMS, WhatsApp, email), each priced in slabs that SSPL sets in a rate card; prices may include a margin. No subscription, plan fee or commission (00 §C1, Premise 5, Pricing Rules #3–#7, #10) | **Decided 2026-11-02, revised 2026-11-04** | Done |
+| D1 | Commercial model | (a) Pass-through server cost (b) Flat plans + 0% commission (c) Commission-based | v0.1 recommended (b). On 2026-11-02 the owner chose (a) as a share of the production AWS bill plus messaging at cost. **Revised 2026-11-04:** tenants pay only metered server usage (request and storage units) and notifications (OTP SMS, other SMS, WhatsApp, email), each priced in slabs that SSPL sets in a rate card; prices may include a margin. **Revision 2 (2026-11-04):** the tenant chooses a Fixed plan (one flat monthly fee, unlimited server usage, messages within a monthly fair-use allowance, then wallet) or a Usage plan (the metered slabs above, no fee), switching from the next 1st. Every feature on both, no commission (00 §C1, Premise 5, Pricing Rules #3–#7, #10, #12) | **Decided 2026-11-02, revised 2026-11-04 (twice)** | Done |
 | D2 | Hosting model | (a) EC2 per tenant (b) Shared pool (c) Hybrid | **Owner chose (b) on one app server:** one app server (EC2) runs every tenant's API, admin portals, booking app, worker and renderer; managed PostgreSQL (RDS) with backups and point-in-time recovery; tenant websites on S3 + CloudFront. (c) capability stays designed in (00 §C2, Pricing Rule #11) | **Decided 2026-11-04** | Done |
 | D3 | Payment model | (a) Razorpay Route (b) Tenant's own account via OAuth (c) Tenant API keys only | (b) with (c) as fallback | Proposed | Sprint 0 (start partner application) |
 | D4 | Domain structure | As brief (`booking.<tenant>.cowos.in`) vs separate tenant domain with `/book` path | `<slug>.cowos.site` + `/book`; custom: `www.` + `book.` or `/book` | Proposed | Sprint 0 |

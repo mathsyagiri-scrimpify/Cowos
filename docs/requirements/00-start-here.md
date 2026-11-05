@@ -1,6 +1,6 @@
 # 00 · Start Here: Questions, Assumptions, and What I'd Change
 
-> Cowos requirements pack · Version 0.3 (draft) · Owner: SSPL Product · Date: 2026-11-04
+> Cowos requirements pack · Version 0.4 (draft) · Owner: SSPL Product · Date: 2026-11-04
 
 This pack has 13 deliverables (files `01` to `13`). Read this file first. It holds five things:
 
@@ -12,6 +12,8 @@ This pack has 13 deliverables (files `01` to `13`). Read this file first. It hol
 
 v0.3 applies the product owner's revision of 2026-11-04 to the approved design doc `docs/designs/cowos-platform-v1.md`: metered slab pricing (Pricing and Billing Rules #1–#11), one app server for hosting (Rule #11), and no pilot programme. Design decisions 1A–33A and the engineering and CEO review decisions that the revision does not replace still stand.
 
+v0.4 applies revision 2 of the same day: two pricing plans, Fixed and Usage (Pricing Rule #12), and grid seat maps that owners build and customers pick seats from, at launch (Rule #13, change C13). It adds a build plan for a small team using Claude Code (14), with a launch target of week 20 [estimated]. Revision 2 has not yet been through the CEO, design or engineering reviews.
+
 ---
 
 ## 1. Clarifying questions and default assumptions
@@ -22,7 +24,7 @@ v0.3 applies the product owner's revision of 2026-11-04 to the approved design d
 | Q2 | Is the product India-only for v1? | Yes. INR, GST, Indian phone numbers, IST, Razorpay, DLT-registered SMS. Data designed so currency, tax and timezone are per tenant, so other markets can be added later. |
 | Q3 | Is "Powered by SSPL" the final badge text? Customers will not know who SSPL is. | Badge reads **"Powered by Cowos"** (optionally "Cowos by SSPL") and links to the Cowos marketing site with a referral code. See Change C6. |
 | Q4 | Does SSPL want to be in the money flow for customer bookings? | No. Customer money goes straight to the tenant's own payment gateway account. SSPL never holds customer funds. See Change C4. |
-| Q5 | What does "charge only for server cost" mean commercially? Is SSPL willing to run at zero margin? | **Answered (D1, revised 2026-11-04).** SSPL charges each tenant only for metered consumption: server usage (request units and storage units) and notifications (OTP SMS, other SMS, WhatsApp, email), each priced in slabs that SSPL configures, like an electricity bill. There is no subscription, plan fee or commission. SSPL sets the slab prices, so they may include a margin (Premise 5). Cowos takes **0% commission on bookings**: it never takes a share of the tenant's booking revenue. What the tenant charges its own customers (prices, discounts, promo codes, fees) is the tenant's decision, not Cowos's. See Change C1. |
+| Q5 | What does "charge only for server cost" mean commercially? Is SSPL willing to run at zero margin? | **Answered (D1, revised 2026-11-04, revision 2).** Each tenant chooses two pricing plans the owner chooses between: a **Fixed plan** (one flat monthly fee, unlimited server usage that is not metered for billing, and messages included up to a monthly fair-use allowance per channel) and a **Usage plan** (no monthly fee; server usage and messages metered and priced in slabs like an electricity bill). Both plans include every feature. SSPL sets the prices, so they may include a margin (Premise 5). Cowos takes **0% commission on bookings**: it never takes a share of the tenant's booking revenue. What the tenant charges its own customers (prices, discounts, promo codes, fees) is the tenant's decision, not Cowos's. See Change C1. |
 | Q6 | How many tenants do you expect in year 1 and year 3? | 50–150 tenants in year 1, 500–1,500 by year 3. Average 15,000 customer-facing page views and 300 bookings per tenant per month. |
 | Q7 | Do tenants have multiple locations (centres)? | Data model supports many locations per tenant from day 1. The MVP admin UI is tuned for 1 location; multi-location UI lands in Phase 2. |
 | Q8 | Should private cabins and dedicated desks be instantly bookable online? | No, not by default. These are sales-led deals (tour, quote, agreement, deposit). Cowos supports per-product **booking modes**: Instant Book, Request to Book, and Enquire / Book a Tour. See Change C7. |
@@ -41,31 +43,32 @@ v0.3 applies the product owner's revision of 2026-11-04 to the approved design d
 
 Each change lists the original idea, the problem, and the better alternative. All later documents assume these changes. If you reject one, the affected sections are listed so you know what to rework.
 
-### C1. Pricing: metered server usage + notifications in slabs + 0% commission (decided, D1)
+### C1. Pricing: a Fixed plan or a Usage plan (metered server usage and notifications in slabs) + 0% commission (decided, D1)
 
 **Original:** Charge tenants only for their EC2 cost, shown with a transparent cost breakdown.
 
 **v0.1 recommendation (superseded):** flat monthly plans, because a pass-through charge of ₹100–₹400 per tenant per month cannot fund support, development or sales. One EC2 per tenant was rejected as too expensive (C2).
 
-**Decision (D1, product owner, 2026-11-02, revised 2026-11-04; Premise 5):** SSPL charges each tenant only for metered consumption: server usage and notifications, each priced in slabs that SSPL configures, like electricity units. There is no subscription, plan fee, plan tier, plan limit or commission. Every tenant gets every feature (Pricing Rule #2). SSPL sets the slab prices, so they may include a margin. The 2026-11-02 version (an equal share of the AWS bill plus messaging at cost) is replaced.
+**Decision (D1, product owner, 2026-11-02, revised 2026-11-04 and again the same day in revision 2; Premise 5):** each tenant chooses two pricing plans the owner chooses between: a **Fixed plan** (one flat monthly fee, unlimited server usage that is not metered for billing, and messages included up to a monthly fair-use allowance per channel) and a **Usage plan** (no monthly fee; server usage and messages metered and priced in slabs like an electricity bill). There are no feature tiers, plan limits or commission: every tenant gets every feature on either plan (Pricing Rule #2). SSPL sets the prices, so they may include a margin. The 2026-11-02 version (an equal share of the AWS bill plus messaging at cost) is replaced.
 
-How the charge works (Pricing Rules #3–#7, #10; full rules in BRD §7):
+How the charge works (Pricing Rules #3–#7, #10, #12; full rules in BRD §7):
+- **Plans (Rule #12):** the Owner chooses Fixed or Usage when the tenant becomes Active, and can switch at any time with effect from the 1st of the next month. **Fixed:** one flat monthly fee set by SSPL on the rate card; server usage unlimited and not billed; messages included up to a monthly allowance per channel, then paid from the wallet; the fee is billed in arrears on the monthly invoice, prorated by day only in the first and last month. **Usage:** no fee; the meters and slabs below apply.
 - **Meters (Rule #3):** server request units (1 unit = 1,000 page views and API calls on the tenant's website and booking-app hosts, read from CloudFront logs: page views are HTML document requests, API calls are `/api/*` requests; only 2xx and 304 responses count; static files, WAF-blocked requests, SSPL monitoring and Tenant Admin, Super Admin and support traffic are not counted; C2-A1, R21, R22); server storage units (1 unit = 1 GB-month of the tenant's media and files, averaged from daily snapshots); notification units (1 unit = 1 message, metered separately for OTP SMS, other SMS, WhatsApp and email).
 - **Slabs (Rule #4):** every meter has its own slab table, applied telescopically. SSPL sets slab boundaries and prices in a Super Admin rate card. A slab price can be ₹0 (a free allowance). Each rate card version takes effect on the 1st of a month. Counts reset at the start of each calendar month in IST.
-- **Server invoice (Rule #5):** monthly in arrears, issued on the 1st for the previous month, one line per server meter with units and slab breakdown, plus GST; due in 10 days. Paid by Razorpay payment link, or by optional UPI Autopay or e-mandate (₹5,000 per-tenant maximum, RBI pre-debit notice).
+- **Server invoice (Rule #5):** monthly in arrears, issued on the 1st for the previous month: a Fixed plan line, or (Usage plan) one line per server meter with units and slab breakdown; plus GST; due in 10 days. Paid by Razorpay payment link, or by optional UPI Autopay or e-mandate (₹5,000 per-tenant maximum, RBI pre-debit notice).
 - **Notifications (Rule #6):** prepaid wallet. Each message is debited at its channel's slab price for the month-to-date count, in one atomic step with the count (eng R4).
-- **Trial (Rule #7):** 14 days; server usage is not billed; notifications need wallet balance.
+- **Trial (Rule #7):** 14 days; no plan fee and server usage is not billed; notifications need wallet balance.
 - **Transparency:** the pricing page shows the current rate card (28A, Rule #5). The billing page shows units per meter, the slab breakdown and a daily month-to-date estimate. The wallet page shows the month-to-date count and current slab per channel.
 - **SSPL cost view (Rule #10):** SSPL loads AWS Data Exports (CUR 2.0) from production only to compare its actual AWS and messaging-provider cost with billed revenue each month. CUR is not used to bill tenants.
-- **Prices:** the product owner configures slab boundaries and prices in the rate card before launch (13 OQ21).
+- **Prices:** the product owner configures the Fixed plan fee and message allowances (13 OQ35) and the slab boundaries and prices (13 OQ21) in the rate card before launch.
 - **Timing:** metering, the rate card, server invoices and the wallet ship at launch (P1). Every tenant pays from the end of its trial.
 
 **What "0% commission" means (and doesn't mean):**
-- It is a promise from **Cowos to the tenant**: Cowos takes no percentage or per-booking fee from the tenant's booking revenue. The tenant's only charges from Cowos are its metered server usage and notifications.
+- It is a promise from **Cowos to the tenant**: Cowos takes no percentage or per-booking fee from the tenant's booking revenue. The tenant's only charges from Cowos are its plan: the Fixed plan fee (plus wallet messages above the allowance), or its metered server usage and notifications on the Usage plan.
 - It says **nothing about what the tenant charges its customers.** Prices, member rates, promo codes, discounts, convenience fees, deposits and whether to pass gateway fees on to customers are all set by the tenant in the Tenant Admin. Cowos never adds its own fee to a customer's bill.
 - Payment gateway charges (Razorpay's MDR) are between the tenant and Razorpay. Cowos doesn't mark them up.
 
-**Revenue:** SSPL's revenue depends on the slab prices it sets. The earlier accepted risk that cost-only charges can't fund SSPL (13 R1) no longer applies. Goal G3 compares billed server and notification revenue with SSPL's production AWS and messaging-provider cost (CEO-A5, Rule #10).
+**Revenue:** SSPL's revenue is the Fixed plan fees (predictable) plus metered charges from Usage plan tenants and wallet messages, at the prices it sets. The earlier accepted risk that cost-only charges can't fund SSPL (13 R1) no longer applies. Goal G3 compares billed revenue with SSPL's production AWS and messaging-provider cost (CEO-A5, Rule #10).
 
 Affects: 01 Vision, 03 BRD §7, 04 SRS (FR-MW-002/003/004, FR-PL-060/061/062, FR-TA-175/176, FR-SA-020/021), 08 Architecture, 09 Data model, 12 Release plan, 13 Decisions.
 
@@ -220,11 +223,25 @@ These are added to the requirements:
 
 | Item | Why it's expensive | Where it goes |
 |------|-------------------|---------------|
-| Interactive floor-plan seat picker | Custom canvas editor for tenants plus seat map renderer; months of work | Phase 2 as "upload floor image + drop pins"; full editor Phase 3 if needed. MVP: pick seat from a list or "any available" |
+| Free-form floor-plan canvas (drag, rotate and resize desks anywhere) | Months of work, and hard for owners to use | Not planned. Replaced in v0.4 by the grid seat map at launch (C13, Rule #13) |
 | Two-way Google/Outlook calendar sync | OAuth per user, webhook channels, conflict resolution | MVP: `.ics` attachment + "Add to Google Calendar" link. Phase 3: one-way push for meeting rooms |
 | Free-form drag-and-drop builder | See section 4 of the BRD; large build and support cost | Not planned; section-based builder instead |
 | Per-tenant WhatsApp Business numbers | Meta Business verification for each tenant | MVP: platform WhatsApp number with tenant name in approved templates. Phase 2: tenant's own number through embedded signup |
 | GST e-invoicing (IRN) | GSP integration and per-tenant credentials | Phase 3 (needed by tenants over the e-invoice turnover threshold) |
+
+### C13. Seat maps: owners draw their space, customers pick a seat like a movie ticket (decided, revision 2)
+
+**Original:** "floor layout (optional)" in inventory and "select seat/room" in the booking app.
+
+**v0.1–v0.3 position (superseded):** a list of units at launch, with "upload a floor image and drop pins" in Phase 2 (old FR-TA-068).
+
+**Decision (product owner, 2026-11-04, revision 2; Pricing Rule #13):** every coworking space has a different shape and seating, and describing it is the hardest setup step for an owner. At launch, owners build a **grid seat map** per floor or zone in the Tenant Admin: start from a template (Rows of desks, Pods of 4, Cabins along a wall, Meeting room + desks, Blank) or a rows × columns grid, then tap or drag to paint Desk, Cabin, Meeting room, Aisle, Wall, Entrance and Label cells. Seats get labels automatically (A1, A2...). Painting creates the bookable units. Customers then choose a seat on the map in the booking app (free green, booked grey, out of service hatched, their pick gold), or keep the one-tap "Any available seat". A list view gives the same choice to keyboard and screen-reader users. The full design is "Seat maps (revision 2)" in the design doc.
+
+Why a grid and not a free canvas or floor photo: a grid works on a phone, an owner can finish it in minutes, the same grid renders fast for customers, and seat-level availability is simple to compute. A floor photo behind the grid is a possible later option.
+
+**Cost:** about 4 weeks of frontend and backend work in the full-team plan (12 §3); a 2-week slice for two developers in the small-team build plan (14, weeks 8–9).
+
+Affects: 03 BRD §5, 04 SRS (FR-TA-068, FR-TA-068a–e, FR-TA-063, FR-TA-091, FR-BA-013, FR-BA-017, FR-BA-019), 05 stories (US-4.6–US-4.8), 06 flows, 07 NFR (accessibility of the map), 09 data model (SeatMap, seat fields on ProductUnit), 10 API, 12 release plan, 13 OQ36.
 
 ---
 
@@ -234,7 +251,7 @@ The full list with owners and deadlines is in [13-risks-open-questions-decisions
 
 | ID | Decision | My recommendation | Needed by |
 |----|----------|-------------------|-----------|
-| D1 | Pricing model | **Decided 2026-11-02, revised 2026-11-04:** metered server usage and notifications in slabs SSPL configures, no subscription or plan fee, 0% commission (C1) | Done |
+| D1 | Pricing model | **Decided 2026-11-02, revised 2026-11-04 (revision 2 the same day):** the tenant chooses a Fixed plan (flat monthly fee, unlimited server usage, messages within a fair-use allowance) or a Usage plan (metered server usage and notifications in slabs SSPL configures); every feature on both; 0% commission (C1) | Done |
 | D2 | Hosting model | **Decided 2026-11-04:** shared multi-tenant on one app server + managed PostgreSQL + S3/CloudFront, hybrid-ready (C2, Rule #11) | Done |
 | D3 | Payment model | Tenant's own Razorpay via OAuth; no Route (C4) | Before payments sprint; start Razorpay Partner application now (takes weeks) |
 | D4 | Domains | `cowos.in` + separate `cowos.site` (C5) | Before sprint 0 (buy domains) |
@@ -245,18 +262,19 @@ The full list with owners and deadlines is in [13-risks-open-questions-decisions
 
 ## 4. Pricing and billing (decided 2026-11-04)
 
-The binding rules are Pricing and Billing Rules #1–#11 in `docs/designs/cowos-platform-v1.md`. BRD §7 and the release plan (12) carry them as requirements. The free pilot programme of 2026-11-02 is removed. Summary of the charging rules:
+The binding rules are Pricing and Billing Rules #1–#13 in `docs/designs/cowos-platform-v1.md`. BRD §7 and the release plan (12) carry them as requirements. The free pilot programme of 2026-11-02 is removed. Summary of the charging rules:
 
 | Topic | Rule |
 |-------|------|
+| Plans (Rule #12) | Fixed plan: one flat monthly fee set by SSPL on each rate card version; unlimited server usage, not billed; messages included up to a monthly allowance per channel, then paid from the wallet at Usage plan prices; fee billed in arrears, prorated by day only in the first and last month, not charged while Suspended or after cancellation. Usage plan: no fee; the meters, slabs and wallet below apply. The Owner chooses at activation and can switch at any time, effective the 1st of the next month. |
 | Meters (Rule #3) | Server request units: 1 unit = 1,000 requests served for the tenant (CloudFront requests on its website and booking-app hosts, plus API requests resolved to it). WAF-blocked requests and SSPL's own health checks and monitoring are not counted. Server storage units: 1 unit = 1 GB-month of the tenant's media and files, averaged from daily snapshots. Notification units: 1 unit = 1 message, metered separately for OTP SMS, other SMS, WhatsApp and email. A WhatsApp message followed by its SMS fallback counts once on each meter. |
 | Slabs (Rule #4) | Each meter has its own telescopic slab table in the Super Admin rate card. A slab price can be ₹0. Each rate card version takes effect on the 1st of a month; invoices and wallet debits use the version in force when the usage happened. Counts reset at the start of each calendar month in IST. |
-| Server invoice (Rule #5) | Monthly in arrears, calendar month in IST, issued on the 1st for the previous month. One line per server meter with units and slab breakdown, plus GST. Due in 10 days. Razorpay payment link, or optional UPI Autopay or e-mandate (₹5,000 per-tenant maximum, RBI pre-debit notice). The billing page shows units per meter, the slab breakdown and a month-to-date estimate, updated daily. |
+| Server invoice (Rule #5) | Monthly in arrears, calendar month in IST, issued on the 1st for the previous month. Fixed plan: one plan line. Usage plan: one line per server meter with units and slab breakdown. Plus GST. Due in 10 days. Razorpay payment link, or optional UPI Autopay or e-mandate (₹5,000 per-tenant maximum, RBI pre-debit notice). Usage plan billing pages show units per meter, the slab breakdown and a month-to-date estimate, updated daily. |
 | Notification wallet (Rule #6) | Prepaid. Each message is debited at its channel's slab price for the month-to-date count, in one atomic step with the count (eng R4). At zero balance, SMS and WhatsApp fall back to email. OTPs and emails continue down to a −₹500 floor. What stops at the floor is open (13 OQ23). The wallet page shows the month-to-date count and current slab per channel. |
-| Trial (Rule #7) | 14 days. Publish on a platform subdomain only. Server usage is not billed. Notifications need wallet balance from day one. The tenant becomes Active when it adds a payment method. |
+| Trial (Rule #7) | 14 days. Publish on a platform subdomain only. No plan fee and server usage is not billed. Notifications need wallet balance from day one. The tenant becomes Active when it adds a payment method and chooses a plan. |
 | SSPL cost view (Rule #10) | Super Admin shows SSPL's actual AWS and messaging-provider cost (AWS Data Exports, CUR 2.0, from production) next to billed revenue per month, so SSPL can set slab prices. CUR is not used to bill tenants. |
 
-Other rules: tenants go live after the production entry gate passes, with 10 tenants live at launch (Rule #1, 12 §4); unpaid server invoices follow BRD §7.3 from launch (Rule #8); tenants sign up self-serve with the onboarding wizard from launch, and the "Book a demo" form stays as a lead channel (Rule #9); one app server hosts the platform (Rule #11, C2). Slab prices are set by the product owner before launch (13 OQ21).
+Other rules: tenants go live after the production entry gate passes, with 10 tenants live at launch (Rule #1, 12 §4); unpaid server invoices follow BRD §7.3 from launch (Rule #8); tenants sign up self-serve with the onboarding wizard from launch, and the "Book a demo" form stays as a lead channel (Rule #9); one app server hosts the platform (Rule #11, C2). The Fixed plan fee, its allowances and the slab prices are set by the product owner before launch (13 OQ35, OQ21). Seat maps (Rule #13) ship at launch (C13).
 
 ---
 
@@ -266,7 +284,7 @@ The release plan (12 §1) has the detail. Requirement tables use these phase cod
 
 | Code | Phase | Indicative timing | What ships |
 |------|-------|-------------------|------------|
-| P1 | Phase 1 (MVP launch) | Weeks 1–24 | Everything needed for tenants to sign up, publish, take paid bookings and pay SSPL: self-serve sign-up with the 14-day trial and the onboarding wizard, settings screens with the owner checklist, builder with 2 themes, booking app, payments and invoices, front desk, CRM, notifications with the slab-priced wallet, custom domains, metering, the rate card, server invoices, collection and dunning, and Super Admin with Demo requests, the tenant scorecard, the dunning dashboard, the business dashboard and the SSPL cost view. Themes 3–4 follow about 6 weeks after launch (CEO-S3). |
+| P1 | Phase 1 (MVP launch) | Weeks 1–20 (small-team build plan, 14) [estimated] | Everything needed for tenants to sign up, publish, take paid bookings and pay SSPL: self-serve sign-up with the 14-day trial and the onboarding wizard, settings screens with the owner checklist, builder with 2 themes, seat maps with seat picking (C13), booking app, payments and invoices, front desk, CRM, notifications with the slab-priced wallet, custom domains, the Fixed and Usage plans, metering, the rate card, server invoices, collection and dunning, and Super Admin with Demo requests, the tenant scorecard, the dunning dashboard, the business dashboard and the SSPL cost view. Themes 3–4 follow about 6 weeks after launch (CEO-S3). |
 | P2 | Phase 2 | Months 7–10 | "Run the space on Cowos": memberships, widget, PWA. |
 | P3 | Phase 3 | Months 11–18 | "Scale and integrate". |
 
@@ -289,3 +307,4 @@ The release plan (12 §1) has the detail. Requirement tables use these phase cod
 | 11 | [Integrations](11-integrations.md) | Payments, SMS, WhatsApp, email, maps, calendar |
 | 12 | [Release Plan](12-release-plan.md) | MVP, Phase 2, Phase 3 |
 | 13 | [Risks, Open Questions & Decisions](13-risks-open-questions-decisions.md) | Risk register, open questions, decision log |
+| 14 | [Build Plan](14-build-plan.md) | Build order of the apps, weekly sprints with their user stories, team, outside dependencies, cut list (small team using Claude Code) |

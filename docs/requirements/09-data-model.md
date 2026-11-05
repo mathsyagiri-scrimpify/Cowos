@@ -1,6 +1,6 @@
 # 09 · Data Model
 
-> Cowos requirements pack · v0.3 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
+> Cowos requirements pack · v0.4 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
 
 ## 1. Entity overview by module
 
@@ -10,7 +10,7 @@
 | Identity | TenantUser, TenantUserRole, TenantUserLocation, TenantUserInvitation, Customer, CustomerIdentity (phone/email), OtpChallenge, PlatformUser |
 | Sites | Theme, ThemeVersion, Site, SiteDraft, SiteVersion, Page, MediaAsset, MediaVariant, EdgeSync (`edge_sync` outbox) |
 | Domains | Domain, DomainVerification, CertificateStatus |
-| Inventory | Location, OperatingHours, Holiday, Amenity, LocationAmenity, Product, ProductUnit (Resource), PriceRule, AddOn, AvailabilityRule, MaintenanceBlock, TourSlotRule |
+| Inventory | Location, OperatingHours, Holiday, Amenity, LocationAmenity, Product, ProductUnit (Resource), PriceRule, AddOn, AvailabilityRule, MaintenanceBlock, TourSlotRule, SeatMap (Pricing Rule #13) |
 | Booking | Booking, BookingAllocation, BookingAddOn, BookingEvent, DayCapacityLedger, CheckIn, BookingPass, CheckInCode |
 | Policies | CancellationPolicy, CancellationTier, PolicyDocument |
 | Payments | PaymentGatewayAccount, PaymentOrder, Payment, Refund, OfflinePayment, WebhookEvent |
@@ -116,7 +116,9 @@ erDiagram
 | timezone | text | Default `Asia/Kolkata` |
 | currency | char(3) | Default INR |
 
-Tenant state transitions: self-serve sign-up → Trial (14 days, platform subdomain only, server usage not rated); payment method added → Active; unpaid server invoice → PastDue, Restricted and Suspended per BRD §7.3 (Pricing Rules #7, #8). Each transition has a test. The pilot transitions of v0.2 are Removed in v0.3.
+**TenantStateHistory** (eng review 5, D2): id, tenant_id, state, valid_from (timestamptz), valid_to (timestamptz null while current), reason, actor (user or system job), event_id (the TenantStateChanged event). One row is closed and one opened in the same transaction as every state change and its TenantStateChanged event; an exclusion constraint on (tenant_id, tstzrange(valid_from, valid_to)) keeps a tenant's periods from overlapping. MonthlyRating counts billable days (Active, PastDue, Restricted, by IST day) from it for the Fixed plan fee and the R3-E1 missing-plan check.
+
+Tenant state transitions (TrialEnded added by the eng re-review, D2: day 15 without a plan → TrialEnded; day 45 → Suspended; plan chosen → Active): self-serve sign-up → Trial (14 days, platform subdomain only, server usage not rated); payment method added → Active; unpaid server invoice → PastDue, Restricted and Suspended per BRD §7.3 (Pricing Rules #7, #8). Each transition has a test. The pilot transitions of v0.2 are Removed in v0.3.
 
 **TenantUser**: id, tenant_id, email (citext), phone, name, password_hash, mfa_secret (encrypted), mfa_enabled, role (Owner, Manager, Staff), status, last_login_at. **TenantUserLocation**: tenant_user_id, location_id (scope).
 
@@ -160,7 +162,8 @@ Tenant state transitions: self-serve sign-up → Trial (14 days, platform subdom
 | booking_mode | Instant, Request, Enquire |
 | visibility | Public, MembersOnly, Hidden |
 | capacity_per_unit | Seats (rooms/cabins) |
-| pool_capacity | For Pool model (seats per day) |
+| pool_capacity | For Pool model (seats per day). When seat_choice is not Off, derived from the product's active Seat units and read-only |
+| seat_choice | HotDesk only: Off (plain pool), Optional, Required (FR-TA-068b). Optional or Required makes availability and allocation work per Seat unit, so every booking holds a specific seat |
 | slot_granularity_min, min_duration_min, max_duration_min | |
 | buffer_before_min, buffer_after_min, lead_time_min, advance_window_days | |
 | tax: sac_code (default 997212), gst_rate (default 18.00), price_includes_tax | |
@@ -169,7 +172,11 @@ Tenant state transitions: self-serve sign-up → Trial (14 days, platform subdom
 | convenience_fee_type, convenience_fee_value | Optional tenant fee (None, Flat, Percent); goes to the tenant |
 | is_sample | Demo inventory labelled "Sample"; pre-publish checks block publishing while any sample item remains (4A, F-RR-C2; demo inventory in the onboarding wizard, CEO-S2) |
 
-**ProductUnit** (Resource): id, tenant_id, product_id, label ("Cabin 3", "D-12"), capacity, floor, zone, floor_plan_x/y (P2), status (Active, Maintenance, Retired).
+**ProductUnit** (Resource): id, tenant_id, product_id, label ("Cabin 3", "D-12", "A3"), capacity, floor, zone, kind (Seat, Room), status (Active, Maintenance, Retired), out_of_service_reason, tags (text[]: window, power, monitor, standing, custom). Placement on a seat map: seat_map_id null, grid_row, grid_col, grid_row_span, grid_col_span (1 × 1 for a seat). The v0.3 floor_plan_x/y (P2) fields are removed. Seat labels are unique per location, checked on map publish (FR-TA-068a).
+
+**SeatMap** (Pricing Rule #13, FR-TA-068): id, tenant_id, location_id, name ("Ground floor · Main hall"), rows (≤ 40), cols (≤ 60), sort_order, draft_layout (jsonb), live_layout (jsonb null), live_version (int, 0 before the first publish), published_at, published_by, template_key null, archived_at. Layout jsonb holds the non-unit cells as `{row, col, kind: Aisle|Wall|Entrance|Label, text}` and, in the draft only, the planned seat and block placements; live seats and blocks are read from ProductUnit placement, so a booking never points at a cell. At most 10 active maps per location (FR-TA-068d). One table instead of SeatMap + SeatMapVersion (eng review 5, D1).
+
+**SeatMapVersion**: Not used (eng review 5, D1). Publishing copies draft_layout to live_layout, increments live_version, copies unit placements to ProductUnit, checks the publish rules (FR-TA-068c) and bumps `tenant.data_seq` (R18), all in one transaction. Each publish writes an AuditEvent holding the replaced live_layout, which is the map's history.
 
 **PriceRule**: id, product_id, unit (Hour, HalfDay, Day, Week, Month), amount, member_amount null, applies_to_unit_id null (unit-specific price), valid_from, valid_to, peak rules (P2: days_of_week, time window, multiplier).
 
@@ -205,7 +212,7 @@ Tenant state transitions: self-serve sign-up → Trial (14 days, platform subdom
 | Field | Notes |
 |-------|-------|
 | id, tenant_id, booking_id | |
-| unit_id | For Unit-model products |
+| unit_id | For Unit-model products, and for HotDesk products whose seat_choice is not Off (the Seat unit; "Any available seat" picks one at hold time) |
 | blocked_during | tstzrange including buffers |
 | active | Boolean, true while booking status blocks inventory |
 
@@ -219,7 +226,7 @@ ALTER TABLE booking_allocation
   WHERE (active);
 ```
 
-**DayCapacityLedger** (pool products): tenant_id, product_id, date, capacity, booked (int), with `CHECK (booked <= capacity)`. Holds increment `booked` in the same transaction (`UPDATE ... SET booked = booked + :qty WHERE booked + :qty <= capacity`), so overselling is impossible under concurrency.
+**DayCapacityLedger** (pool products with Seat choice Off): tenant_id, product_id, date, capacity, booked (int), with `CHECK (booked <= capacity)`. It is the capacity source only while the product's Seat choice is Off. When a map publish turns seats on, the same transaction (after the R3-A1 seat assignment) deletes that product's ledger rows and free seats in BookingAllocation become the only source; turning seats back off rebuilds the rows from active allocations in one transaction (eng review 5, D3). Holds increment `booked` in the same transaction (`UPDATE ... SET booked = booked + :qty WHERE booked + :qty <= capacity`), so overselling is impossible under concurrency.
 
 **BookingEvent**: booking_id, type (Created, Held, PaymentStarted, Paid, Confirmed, Rescheduled, Cancelled, RefundIssued, CheckedIn, NoShow, NotificationSent), actor (customer/staff/system/support), data (jsonb), at.
 
@@ -297,7 +304,9 @@ ALTER TABLE booking_allocation
 
 ### 3.11 Platform billing
 
-There are no plans or subscriptions. Each tenant pays only for metered consumption: server request units and server storage units, invoiced monthly in arrears, and notification units, debited from the prepaid wallet. Each meter is priced in telescopic slabs from the rate card (§3.11A) (D1, Pricing Rules #3 to #6). These tables ship at launch. UsageDaily, MonthlyMeterCount, ServerInvoice and ServerInvoiceLine are tenant-owned and RLS-enforced; the rating job writes them one tenant per transaction (R3).
+Each tenant is on one of two plans per calendar month (Pricing Rule #12): Fixed (flat fee, unlimited server usage, messages within allowances, then wallet) or Usage (server request units and server storage units invoiced monthly in arrears, and notification units debited from the prepaid wallet, each meter priced in telescopic slabs from the rate card, §3.11A) (D1, Pricing Rules #3 to #6). These tables ship at launch. TenantPlanPeriod, UsageDaily, MonthlyMeterCount, ServerInvoice and ServerInvoiceLine are tenant-owned and RLS-enforced; the rating job writes them one tenant per transaction (R3).
+
+**TenantPlanPeriod** (Rule #12): id, tenant_id, plan (Fixed, Usage), starts_on (date: the activation date, or the 1st of a month), ends_on null, chosen_by (user), chosen_at. One open period per tenant; a scheduled switch closes the current period on the last day of the month and opens the next on the 1st. Unique (tenant_id, starts_on); periods never overlap (exclusion constraint on the date range).
 
 **Meter** (enum, Pricing Rule #3): ServerRequests (1 unit = 1,000 requests), ServerStorage (1 unit = 1 GB-month), OtpSms, Sms, WhatsApp, Email (1 unit = 1 message each). ServerRequests and ServerStorage are invoiced; the four notification meters are debited from the wallet.
 
@@ -309,7 +318,7 @@ There are no plans or subscriptions. Each tenant pays only for metered consumpti
 
 **ServerInvoice**: id, tenant_id, number (`CW/26-27/000123`), month (IST calendar month), rate_card_version_id, taxable_value, cgst, sgst, igst (SSPL state vs tenant state), total, status (Issued, Paid, Overdue, Void), issued_at (1st of the next month), due_at (issued_at + 10 days), paid_at, payment_link_ref, pdf_key. Unique (tenant_id, month). Immutable after issue like tenant invoices; reproducible from UsageDaily and the recorded rate card version (NFR-MTR-02). Usage in Trial is not rated (Pricing Rules #5, #7).
 
-**ServerInvoiceLine**: server_invoice_id, meter (ServerRequests, ServerStorage), units, slab_breakdown (jsonb: per slab from_unit, to_unit, units, price_per_unit, amount), amount. One line per server meter (Pricing Rule #5).
+**ServerInvoiceLine**: server_invoice_id, line_type (FixedPlan, Meter), meter null (ServerRequests, ServerStorage), units (billable days for FixedPlan), slab_breakdown (jsonb, Meter lines: per slab from_unit, to_unit, units, price_per_unit, amount), amount. A Fixed plan month has one FixedPlan line; a Usage plan month has one line per server meter (Pricing Rules #5, #12).
 
 **PlatformPayment**: server_invoice_id null or wallet top-up, provider ids, method (PaymentLink, UpiAutopay, EMandate), amount, status.
 
@@ -323,13 +332,13 @@ There are no plans or subscriptions. Each tenant pays only for metered consumpti
 
 **PlatformPlan / PlatformPlanVersion**: Removed in v0.2 (no plans, prices, limits or feature tiers; every tenant gets every feature; D1, R2).
 
-**PlatformSubscription**: Removed in v0.2 (no subscriptions; D1, R2).
+**PlatformSubscription**: Removed in v0.2. In v0.4 the tenant's plan is recorded in TenantPlanPeriod (Pricing Rule #12); prices come from RateCardVersion.
 
 **PlatformInvoice**: Removed in v0.2 (SSPL's tenant invoice is now ServerInvoice).
 
 ### 3.11A Platform admin
 
-**RateCardVersion** (Pricing Rule #4): id, number, effective_from (date, always the 1st of a month, IST), status (Draft, Published), published_by (platform user), published_at, note. Platform schema, outside tenant RLS; edited and published only by Super Admin. Unique (effective_from) among published versions. A published version and its slabs never change; a price change is a new version effective from the 1st of a later month (NFR-MTR-02). The version in force for a month is the latest published version with `effective_from` on or before the 1st of that month. The notice period before a new version takes effect is open (Open Question 5).
+**RateCardVersion** (Pricing Rules #4, #12): id, number, effective_from (date, always the 1st of a month, IST), fixed_plan_fee (₹ per month, excluding GST), fixed_allowance (jsonb: monthly included messages per channel: OtpSms, OtherSms, WhatsApp, Email), status (Draft, Published), published_by (platform user), published_at, note. Platform schema, outside tenant RLS; edited and published only by Super Admin. Unique (effective_from) among published versions. A published version and its slabs never change; a price change is a new version effective from the 1st of a later month (NFR-MTR-02). The version in force for a month is the latest published version with `effective_from` on or before the 1st of that month. The notice period before a new version takes effect is open (Open Question 5).
 
 **RateSlab**: id, rate_card_version_id, meter, from_unit, to_unit null (null = no upper bound), price_per_unit (₹, may be 0 for a free allowance). Each meter in a version has a complete slab table: the first slab starts at 0, slabs are contiguous with no overlap, and the last is open-ended. Applied telescopically: units in slab 1 at the slab-1 price, the next units at the slab-2 price, and so on (Pricing Rule #4).
 
@@ -351,7 +360,8 @@ Tenant scorecard (CEO-A4, R20): covers all live tenants; computed on demand, not
 
 | Rule | Mechanism |
 |------|-----------|
-| No overlapping allocations on a unit | GiST exclusion constraint on `booking_allocation` |
+| No overlapping allocations on a unit | GiST exclusion constraint on `booking_allocation`; it also covers seats, since a seat is a ProductUnit of kind Seat (Pricing Rule #13) |
+| Seats with future bookings stay put | Map publish fails if it removes, merges or reassigns a ProductUnit that has an active future `booking_allocation`; units are archived, never hard-deleted |
 | No overselling of pool capacity | Conditional update on `day_capacity_ledger` + CHECK |
 | Invoices immutable after issue | No UPDATE of financial columns (trigger) except status/paid; corrections by credit note |
 | Gap-free invoice numbers per series per FY | Row lock on `invoice_series` inside the invoice transaction |

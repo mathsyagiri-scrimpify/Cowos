@@ -1,6 +1,6 @@
 # 08 · High-Level Architecture
 
-> Cowos requirements pack · v0.3 draft · Stack: ASP.NET Core (.NET 10 LTS), React + TypeScript, PostgreSQL, AWS (ap-south-1 Mumbai primary)
+> Cowos requirements pack · v0.4 draft · Stack: ASP.NET Core (.NET 10 LTS), React + TypeScript, PostgreSQL, AWS (ap-south-1 Mumbai primary)
 
 ## 1. Architecture principles
 
@@ -94,8 +94,8 @@ flowchart LR
 | `Tenancy` | Tenants, the full tenant state machine from launch (Trial at sign-up, Active when a payment method is added, PastDue, Restricted, Suspended per BRD §7.3; Pricing Rules #7, #8), one `TenantStateChanged` event per state change, `data_seq`, feature flags, tenant catalog (cell mapping). No plan limits (D1, R18) | PlatformBilling, Sites |
 | `Sites` | Themes, site drafts, versions, pages, media references, publish pipeline, live pointer `(version_id, data_seq)` and its switch rules, TenantStateCtaService, `edge_sync` outbox and EdgeSyncWorker (§6, §8) | Renderer, Domains, Tenancy |
 | `Domains` | Hostnames, verification, certificate status; adds an `edge_sync` row on every routing change (no direct KVS writes, R17) | Sites, Tenancy |
-| `Inventory` | Locations, products, units, pricing, add-ons, availability rules, holidays, tours | Booking |
-| `Booking` | Availability engine, holds, bookings, requests, check-in, reschedule, cancellation | Inventory, Payments, Invoicing |
+| `Inventory` | Locations, products, units, pricing, add-ons, availability rules, holidays, tours, seat maps (draft and live layout on SeatMap, publish history in AuditEvent; seats and blocks are ProductUnits, Pricing Rule #13) | Booking |
+| `Booking` | Availability engine (per seat when a hot desk product has Seat choice on), holds with picked or auto-assigned seats, bookings, requests, check-in, reschedule, seat moves, cancellation | Inventory, Payments, Invoicing |
 | `Payments` | Gateway connections, orders, payments, refunds, webhooks, reconciliation | Booking, Invoicing |
 | `Invoicing` | Invoice series, invoices, credit notes, PDF generation, GST calculation | Payments, Booking |
 | `Crm` | Customers, companies, leads, tours, notes, consent records, DPDP requests | Booking |
@@ -111,7 +111,7 @@ Rules: modules talk through public interfaces (in-process) or domain events via 
 
 ### 4.1 Metering pipeline
 
-SSPL bills each tenant only for metered consumption, priced in telescopic slabs from the rate card (D1, Pricing Rules #3 to #7). Usage records are kept so a tenant can see the daily detail behind an invoice (NFR-MTR-01).
+SSPL bills each tenant by its plan (Pricing Rule #12): a flat fee on the Fixed plan (messages above the allowance from the wallet), or metered consumption priced in telescopic slabs on the Usage plan, both from the rate card (D1, Pricing Rules #3 to #7, #12). Usage is counted for every tenant, so Usage plan owners see the daily detail behind an invoice (NFR-MTR-01) and SSPL sees each Fixed tenant's real cost.
 
 ```mermaid
 flowchart LR
@@ -407,7 +407,7 @@ Indicative monthly base cost for production v1 (on-demand, Mumbai, Oct 2026; val
 | Cross-region backup copies, KMS, Secrets Manager, Route 53 | ~25 |
 | **Total** | **~340–370 plus the app server** |
 
-Tenants don't pay a share of this bill. SSPL charges each tenant only for metered consumption (server request units, server storage units, notification units) at the slab prices in the rate card, which SSPL sets and which may include a margin; there is no subscription, plan fee or commission (D1, Pricing Rules #3 to #6). SSPL compares this production cost and messaging-provider cost with billed revenue each month in the cost view (Pricing Rule #10) to set slab prices; goal G3 is that billed revenue covers that cost by launch + 18 months. SSPL pays for staging, dev, CI, the marketing site and Super Admin, and absorbs unpaid invoices. Staging adds ~30–40% of production if kept running; schedule it to scale down outside office hours.
+Tenants don't pay a share of this bill. SSPL charges each tenant only for metered consumption (server request units, server storage units, notification units) at the slab prices in the rate card, which SSPL sets and which may include a margin, or pays the flat Fixed plan fee; there is no commission (D1, Pricing Rules #3 to #6, #12). SSPL compares this production cost and messaging-provider cost with billed revenue each month in the cost view (Pricing Rule #10) to set slab prices; goal G3 is that billed revenue covers that cost by launch + 18 months. SSPL pays for staging, dev, CI, the marketing site and Super Admin, and absorbs unpaid invoices. Staging adds ~30–40% of production if kept running; schedule it to scale down outside office hours.
 
 ## 15. CI/CD
 

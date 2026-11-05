@@ -1,6 +1,6 @@
 # 10 · API Module List
 
-> Cowos requirements pack · v0.3 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked.
+> Cowos requirements pack · v0.4 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked.
 
 ## 1. Conventions
 
@@ -90,6 +90,11 @@
 | PUT | `/api/v1/admin/products/{id}/prices` | Price rules |
 | CRUD | `/api/v1/admin/products/{id}/addons` | Add-ons |
 | CRUD | `/api/v1/admin/products/{id}/availability-rules` · `/maintenance-blocks` | Availability |
+| CRUD | `/api/v1/admin/locations/{id}/seat-maps` | Seat maps per location: name, size, order; at most 10 per location (FR-TA-068, FR-TA-068d) |
+| GET/PUT | `/api/v1/admin/seat-maps/{id}/draft` | Read or save the draft: grid size, non-unit cells, seat and block placements with labels, tags, status and product or unit links; optional `template` on first save (FR-TA-068 to 068b) |
+| POST | `/api/v1/admin/seat-maps/{id}/publish` | Validate and publish the draft (FR-TA-068c); returns 409 with the blocking bookings when a seat or block with future bookings would be removed or reassigned |
+| GET | `/api/v1/admin/seat-maps/{id}/occupancy?date=` | Today on the map: per seat and block, free, booked, checked in or out of service, with booking references (FR-TA-068e) |
+| POST | `/api/v1/admin/bookings/{id}/move-seat` | Move a booking to another free seat or unit of the same product for the same time; notifies the customer (FR-TA-068e) |
 | CRUD | `/api/v1/admin/tour-slot-rules` | Tour availability |
 | CRUD | `/api/v1/admin/policies/cancellation` | Cancellation policies |
 | CRUD | `/api/v1/admin/policies/documents` | Privacy/terms/house rules |
@@ -102,6 +107,7 @@
 | GET | `/api/v1/public/products?locationId=` | Catalog |
 | GET | `/api/v1/public/products/{slug}` | Product detail |
 | GET | `/api/v1/public/products/{id}/availability?from=&to=&quantity=&duration=` | Start times for a chosen duration, merged across units unless a unit is chosen (1A) / day capacity / monthly availability |
+| GET | `/api/v1/public/seat-maps/{id}/availability?productId=&start=&end=` | Live seat map for the chosen time: layout plus each seat's or block's state (free, booked, out of service), label and tags; no customer data. Cached for a few seconds per map and time (FR-BA-013, NFR-PERF-07) |
 | POST | `/api/v1/public/quotes` | Price breakdown for a selection (coupon, add-ons, GST) |
 | GET | `/api/v1/public/tours/availability?locationId=&date=` | Tour slots |
 | POST | `/api/v1/public/leads` | Contact form / enquiry / tour request |
@@ -110,7 +116,7 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| POST | `/api/v1/public/bookings/holds` | Create hold (Instant) + payment order, after phone OTP (customer token required); re-quotes the price and returns any difference before Razorpay opens; if the slot was taken, returns the next free times (2A) |
+| POST | `/api/v1/public/bookings/holds` | Create hold (Instant) + payment order, after phone OTP (customer token required); re-quotes the price and returns any difference before Razorpay opens; if the slot was taken, returns the next free times (2A). Optional `seatIds` (picked seats or units, one per quantity); without them a free seat is assigned when the product's seat_choice is not Off. If a picked seat was taken, returns 409 with the refreshed seat states (Pricing Rule #13) |
 | GET | `/api/v1/me/checkout/{bookingRef}/status` | Resumable checkout state for UPI return or reload; requires the customer's session, another customer gets 404 (9A, R16) |
 | GET | `/api/v1/public/passes/{token}` | Desk pass: opaque purpose-bound token; returns first name + last initial, date/time, room, logo and a short-lived check-in code; expired, revoked, wrong-tenant or wrong-purpose → not found (17A, R10) |
 | DELETE | `/api/v1/public/bookings/holds/{id}` | Release hold |
@@ -205,15 +211,15 @@
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/v1/admin/billing` | Billing page (5A): month-to-date units per server meter with slab breakdown and estimate (updated daily, "as of"), last invoice and its status, next issue date (the 1st), payment method, "₹0 commission" line, wallet summary; trial end date during Trial. Never other tenants' usage (Pricing Rules #5, #7) |
+| GET | `/api/v1/admin/billing` | Billing page (5A): current plan and any scheduled switch, last month's cost on the other plan (Pricing Rule #12); Usage plan: month-to-date units per server meter with slab breakdown and estimate (updated daily, "as of"); Fixed plan: messages used against each allowance; last invoice and its status, next issue date (the 1st), payment method, "₹0 commission" line, wallet summary; trial end date during Trial. Never other tenants' usage (Pricing Rules #5, #7) |
 | GET | `/api/v1/public/platform-plans` | Removed in v0.2 (no plans, D1) |
-| POST | `/api/v1/admin/billing/subscription` · PATCH · DELETE | Removed in v0.2 (no subscriptions, D1) |
+| GET/PUT/DELETE | `/api/v1/admin/billing/plan` | Read the current plan; PUT chooses a plan at activation or schedules a switch from the next 1st; DELETE cancels a scheduled switch. Owner only, audited (FR-TA-182, Pricing Rule #12) |
 | PUT | `/api/v1/admin/billing/payment-method` | Payment link details or UPI Autopay / e-mandate (₹5,000 maximum, RBI pre-debit notice); adding one moves a Trial tenant to Active (Pricing Rules #5, #7) |
-| GET | `/api/v1/admin/billing/invoices` · `/{id}` · `/{id}/pdf` | SSPL server invoices: one line per server meter with units and slab breakdown, GST, due date, status (Pricing Rule #5) |
+| GET | `/api/v1/admin/billing/invoices` · `/{id}` · `/{id}/pdf` | SSPL server invoices: the Fixed plan line, or one line per server meter with units and slab breakdown; GST, due date, status (Pricing Rules #5, #12) |
 | GET | `/api/v1/admin/billing/wallet` | Wallet balance and transactions; month-to-date count and current slab per notification channel (Pricing Rule #6) |
 | POST | `/api/v1/admin/billing/wallet/top-ups` | Wallet top-up through Razorpay on SSPL's account (Pricing Rule #6) |
 | GET | `/api/v1/admin/billing/usage?month=` | Daily usage per meter for a month: the detail behind an invoice or the month to date (NFR-MTR-01, Pricing Rules #3, #5) |
-| GET | `/api/v1/admin/billing/rate-card` | The rate card version in force: slab table per meter (Pricing Rule #4) |
+| GET | `/api/v1/admin/billing/rate-card` | The rate card version in force: Fixed plan fee and allowances, and the slab table per meter (Pricing Rules #4, #12) |
 
 ### 2.15 Platform (Super Admin)
 
@@ -239,7 +245,7 @@
 | GET | `/api/v1/platform/metrics/business` | Sign-ups, trials, conversions, churn, referrals (FR-SA-051, CEO-A4) |
 | GET | `/api/v1/platform/metrics/cost-recovery` | Removed in v0.3 (replaced by `/platform/cost-view`, Pricing Rule #10) |
 | GET | `/api/v1/platform/audit-events` | Global audit |
-| GET/POST | `/api/v1/platform/rate-cards` · GET/PUT `/rate-cards/{id}` · POST `/rate-cards/{id}/publish` | Rate card versions (Super Admin edits; Finance views): slab table per meter, `effective_from` the 1st of a month. Only a Draft can be changed; PUT on a Published version → 409. Publish checks every meter has a complete, contiguous slab table and rebuilds the pricing page (Pricing Rule #4, NFR-MTR-02) |
+| GET/POST | `/api/v1/platform/rate-cards` · GET/PUT `/rate-cards/{id}` · POST `/rate-cards/{id}/publish` | Rate card versions (Super Admin edits; Finance views): Fixed plan fee and allowances, slab table per meter, `effective_from` the 1st of a month. Only a Draft can be changed; PUT on a Published version → 409. Publish checks every meter has a complete, contiguous slab table and rebuilds the pricing page (Pricing Rule #4, NFR-MTR-02) |
 | GET | `/api/v1/platform/tenants/{id}/usage?month=` | A tenant's daily usage per meter (Super Admin, Finance) (NFR-MTR-01) |
 | GET | `/api/v1/platform/billing/rating-runs` · POST `/rating-runs/{month}/retry` | Rating runs per month: status, tenants rated, invoices issued, failures; retry a failed run, which is idempotent (Pricing Rule #5, NFR-MTR-05) |
 | GET | `/api/v1/platform/cost-view?month=` | SSPL cost view: production AWS cost (CUR 2.0) and messaging-provider cost next to billed server and notification revenue per month (Super Admin; Finance views). Not used for tenant bills (Pricing Rule #10) |

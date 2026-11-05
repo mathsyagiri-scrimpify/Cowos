@@ -1,6 +1,6 @@
 # 05 · User Stories with Acceptance Criteria
 
-> Cowos requirements pack · v0.3 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. Stories without a phase mark are P1.
+> Cowos requirements pack · v0.4 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. Stories without a phase mark are P1.
 
 ## Epic index
 
@@ -14,7 +14,7 @@
 | E6 | Customer instant booking | P1 |
 | E7 | Requests, enquiries and tours | P1 |
 | E8 | Booking management and front desk | P1 |
-| E9 | Metered billing, wallet, dunning and suspension | P1 |
+| E9 | Plans, metered billing, wallet, dunning and suspension | P1 |
 | E10 | Super Admin and support | P1 |
 | E11 | Existing-website integration | P1 / P2 |
 | E12 | Privacy and data rights | P1 |
@@ -128,6 +128,30 @@ As a tenant owner, I want to create promo codes myself so that I can run my own 
 - **Given** I'm a Manager assigned to the Madhapur location, **when** I create a code, **then** I can only apply it to Madhapur products.
 - **Given** I pause a code, **when** a customer applies it, **then** it is rejected, and bookings that already used it are unaffected.
 
+**US-4.6 Draw my space as a seat map** (FR-TA-068, FR-TA-068a, FR-TA-068b, FR-TA-068c)
+As a tenant owner, I want to draw my hall the way it really is so that customers can choose a seat without calling me.
+- **Given** I open Inventory → Seat maps for my Madhapur location, **when** I create "Ground floor · Main hall" from the template "Rows of desks" (4 rows of 6 with a centre aisle), **then** I see a 6 × 8 grid with 24 desks labelled A1–A6 to D1–D6, and a prompt to assign them to a product (DR3-13A).
+- **Given** the map is open on my phone, **when** I drag across row B with the Aisle tool, **then** those cells become aisle, the row B seats are removed from the draft, no other seat changes its label, and Undo brings them back (DR3-13A).
+- **Given** I paint a 2 × 3 Cabin block and link it to "Cabin 3", **when** I press Publish map, **then** the map goes live in the booking app within a minute, without publishing my website.
+- **Given** 4 desks are not assigned to any product, **when** I press Publish map, **then** publishing is blocked and those 4 desks are highlighted with "Assign these seats to a product".
+- **Given** I assign 20 desks to "Hot desk day pass", **when** I open that product, **then** its capacity shows 20, can't be typed, and Seat choice is set to Optional.
+
+**US-4.7 A booked seat can't disappear from the map** (FR-TA-068c, FR-TA-068f)
+As a tenant owner, I want the map to protect seats people have already booked so that no customer turns up to a seat that no longer exists.
+- **Given** seat A3 has a booking on 20 Nov, **when** I paint A3 as Wall and press Publish map, **then** publishing is blocked, and the editor lists the 20 Nov booking with a "Move to another seat" link.
+- **Given** I move that booking to A4, **when** I publish again, **then** the map goes live and the customer gets an email and WhatsApp with the new seat, and their desk pass shows A4.
+
+**US-4.9 Seats for bookings sold before the map** (FR-TA-068c, FR-TA-068f)
+As a tenant owner, I want bookings I sold before drawing the map to get real seats so that nobody is double-seated.
+- **Given** my hot desk product has 3 bookings for 12 Nov and no map, **when** I publish a map with 20 desks assigned to it, **then** each of the 3 bookings gets a different seat, each customer gets an email and WhatsApp with their seat, and 17 seats show free for 12 Nov.
+- **Given** 14 bookings for 12 Nov and a map with 12 desks, **when** I publish, **then** publishing is blocked with "12 Nov: 14 bookings, 12 seats" and nothing changes.
+- **Given** a customer is booking seat B2 while I publish a map that removes B2, **when** both finish, **then** either my publish is blocked because B2 is booked, or the customer sees "B2 was just booked · pick another seat"; nobody ends up on a removed seat.
+
+**US-4.8 See today on the map** (FR-TA-068e) · After launch (CEO review 3, R3-C4)
+As front desk staff, I want to see who sits where today so that I can greet people and fix mix-ups quickly.
+- **Given** 12 seats are booked today and 5 guests have checked in, **when** I open Today on the map, **then** the 5 seats show checked in, 7 show booked, the rest free, and tapping a seat shows the customer's name.
+- **Given** a customer asks to sit by the window, **when** I drag their booking from C2 to A1 (free, tagged window), **then** the booking moves and the customer is notified.
+
 ---
 
 ## E5 · Payment gateway and invoicing
@@ -175,6 +199,15 @@ As a first-time customer, I want to browse without an account and only verify my
 As a customer, I want to apply a coupon so that I get the advertised discount.
 - **Given** coupon `FIRST20` gives 20% off up to ₹200 on first bookings, **when** I apply it to my first ₹1,200 booking, **then** the discount shows as ₹200 and GST is calculated on the discounted taxable value.
 - **Given** I already have a past booking, **when** I apply `FIRST20`, **then** I see "This coupon is valid on your first booking only".
+
+**US-6.4 Pick my seat like a movie ticket** (FR-BA-013, FR-BA-017, FR-BA-019, NFR-A11Y-10)
+As a freelancer, I want to choose a window seat when I book a day pass so that I know where I'll sit before I arrive.
+- **Given** the day pass product has a seat map with Seat choice Optional, **when** I choose 12 Nov, **then** I see "Choose your seat" with free seats green, booked grey, out of service hatched, and an "Any available seat" button that books without picking.
+- **Given** I tap A1 (window, power), **when** it turns gold and I continue, **then** checkout shows "Seat A1" and my hold covers A1 for 10 minutes.
+- **Given** someone else books A1 while I verify my OTP, **when** my hold is created, **then** I see "A1 was just booked · pick another seat" on a refreshed map, and nothing is charged.
+- *(After launch, R3-C4)* **Given** I book 3 seats, **when** I tap "Seat us together", **then** 3 adjacent free seats are picked for me, and I can change any of them.
+- **Given** I use a screen reader, **when** I switch to List view, **then** I can pick the same free seats grouped by row, each read as "A1, window, free".
+- **Given** my booking is confirmed, **when** I open the confirmation and desk pass, **then** both show seat A1.
 
 ---
 
@@ -252,6 +285,21 @@ As a tenant owner, I want my server usage priced in slabs like an electricity bi
 - **Given** WAF blocked 5,000 requests to my site, **when** request units are counted, **then** those requests are not counted, nor are SSPL's health checks and monitoring (Pricing Rule #3).
 - **Given** I was in Trial from 3 to 16 October and became Active on 17 October, **when** October is invoiced, **then** only units from 17 October onwards are billed (Pricing Rule #7).
 
+**US-9.8 Choose the Fixed plan** (FR-TA-182, FR-PL-060, FR-PL-062, FR-TA-175, FR-SA-020, FR-MW-002)
+As a tenant owner, I want one flat monthly fee with unlimited use so that my bill is the same every month.
+- **Given** the rate card in force has a Fixed plan fee of ₹F and allowances of 1,000 WhatsApp, 500 SMS and 5,000 emails a month, **when** I visit the pricing page, **then** I see a "Start free trial" button and one comparison table with sample spaces as rows and Fixed ("₹F/month · unlimited website and booking-app traffic · includes 1,000 WhatsApp, 500 SMS, 5,000 emails a month") and Usage as columns, the cheaper cell in each row marked "Lower" (Pricing Rule #12, DR3-1A, DR3-9A).
+- **Given** my trial is running, **when** I add a payment method and choose Fixed on 17 October (a 31-day month), **then** I become Active and October's invoice on 1 November has one line, "Fixed plan, 15 of 31 days" at ₹F × 15 ÷ 31, plus GST, with no server meter lines.
+- **Given** I'm on Fixed for all of November and my website had 3 million page views, **when** November is invoiced, **then** the invoice is exactly ₹F + GST.
+- **Given** I've sent 1,000 WhatsApp messages this month on Fixed, **when** the 1,001st is sent, **then** it is debited from my wallet at the Usage plan WhatsApp slab price, and Billing shows "WhatsApp allowance used · further messages come from your wallet".
+- **Given** I was Suspended from 22 to 30 November, **when** November is invoiced, **then** the Fixed plan line covers 1–21 November only.
+
+**US-9.9 Switch plans** (FR-TA-182, FR-TA-175, FR-PL-060)
+As a tenant owner, I want to move between Fixed and Usage when my business changes so that I always pay the better way.
+- **Given** I'm on Usage, **when** I open Billing after my first full month, **then** I see "Last month on the Fixed plan: about ₹<amount>" next to what I paid.
+- **Given** I'm on Usage, **when** I choose "Switch to Fixed" on 12 December, **then** Billing shows "Fixed plan from 1 January", I get a confirmation email, and December is still billed on Usage.
+- **Given** a switch is scheduled, **when** I cancel it before 1 January, **then** I stay on Usage.
+- **Given** I'm a Manager, **when** I open Billing, **then** I can't change the plan.
+
 **US-9.7 Notification wallet with slab prices** (FR-PL-042, FR-PL-040, FR-TA-180)
 As a tenant owner, I want each message priced by my monthly count so that I know what notifications cost.
 - **Given** the WhatsApp slabs are messages 1–500 at ₹A and 501 upwards at ₹B, and I've sent 500 WhatsApp messages this month, **when** the 501st is sent, **then** my wallet is debited ₹B in the same transaction that sets the count to 501, and the wallet page shows the count and slab 2 for WhatsApp (Pricing Rules #4, #6, R4).
@@ -304,7 +352,7 @@ As SSPL, I want to set slab prices per meter in one place so that tenant bills, 
 - **Given** slab 1 for email is 1–1,000 at ₹0, **when** I publish, **then** it is accepted as a free allowance.
 - **Given** a version already in force, **when** I try to change a price in it, **then** I can't; I create a new version from a later 1st.
 
-**US-10.8 Compare cost with billed revenue** (FR-SA-022, FR-PL-069)
+**US-10.8 Compare cost with billed revenue** (FR-SA-022, FR-PL-069) · Launch + about 4 weeks (CEO review 3, R3-C2)
 As SSPL, I want actual AWS and messaging-provider cost next to billed revenue each month so that I can set slab prices.
 - **Given** last month's CUR 2.0 data and provider charges are loaded, **when** I open the cost view, **then** I see production AWS cost by service, messaging cost per channel, billed server and wallet revenue, and the difference; no tenant's bill is computed from this view (Pricing Rule #10).
 
