@@ -40,7 +40,7 @@
 **Priority:** P1
 **Depends on:** M3b (weeks 16-19)
 
-### Floor photo behind the seat map grid (only if owners ask)
+### Floor photo behind the seat map grid (superseded 2026-11-11: now launch scope, pack v0.5 C15, FR-TA-068g and 068h)
 
 **What:** Let an owner upload a floor plan image and show it faintly behind the grid so desks line up with the real room.
 

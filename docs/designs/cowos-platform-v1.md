@@ -4784,17 +4784,774 @@ None.
 
 Pass 5 stays below 8 until DESIGN.md exists (Sprint 0 exit criterion, 22A); that is scheduled work, not a deferred decision.
 
+## CEO Review 4: pack v0.5, C15 to C19 (2026-11-11, HOLD SCOPE)
+
+Reviewed: the five additions in pack v0.5 (commit `dbd879a`): floors, plan tracing and seat-type prices (C15); renewals and ending alerts (C16); amenity list (C17); check-in by QR or code inside a window (C18); SSPL offer codes (C19). Mode: HOLD SCOPE, chosen by the product owner (D1, 2026-11-11). Depth: requirement level; no code exists.
+
+### Decision ledger (CEO review 4)
+
+| ID and owner | Contract and evidence | Current | Proposed | Status | Exact approval and scope |
+|---|---|---|---|---|---|
+| R4-1, Section 4 (renewals) | FR-BA-038, FR-TA-084, 13 OQ46: a renewal is a new booking and the seat or unit is not kept for the current customer | Not kept; the alert warns that someone else can book it | Keep the same seat or unit for the current customer until a deadline the tenant sets, for weekly and monthly bookings | approved | D2 answer, 2026-11-11: A. Weekly and monthly bookings only; deadline is a tenant setting per product, default 2 days before the end, 0 switches the hold off; hourly and daily not held |
+| R4-2, Section 1 (offer codes) | FR-SA-059, FR-TA-183, FR-PL-062, 13 OQ48: a tenant becomes Active by adding a payment method (US-9.1); the pack does not say whether a tenant on a 100% code must do so | Not stated | A tenant with a valid 100% code becomes Active without a payment method and must add one before the free period ends | approved | D3 answer, 2026-11-11: A. A valid 100% code makes the tenant Active with no payment method; reminders 30 and 7 days before the end; with none on file at the end the tenant goes to the same state as a trial that ended unpaid |
+| R4-3, Section 2 (offer codes) | FR-SA-059, Pricing Rule #6, 13 OQ48: messages are paid from a prepaid wallet; the offer code covers the plan fee and server usage only | Messages not covered; a free tenant must top up the wallet (minimum ₹500) before SMS or WhatsApp messages go out | The offer code can carry a monthly message credit that SSPL sets on the code | unresolved | pending D4 |
+
+### currentDecision (R4-1)
+
+Commitment comparison:
+
+| Commitment | Source/approval or pending | Current | A | B |
+|---|---|---|---|---|
+| Same seat or unit at renewal | 13 OQ46 default (not approved) | Not kept | Kept for the current customer until the deadline, then released | Not kept |
+| Who can book the next period before the deadline | pending | Anyone | Only the current customer (weekly and monthly bookings) | Anyone |
+| Deadline | pending | none | Tenant setting per product; default 2 days before the end | none |
+| Hourly and daily bookings | FR-BA-038 | Not kept | Not kept (unchanged) | Not kept |
+| Alerts (FR-BA-039) | C16, requested 2026-11-11 | Sent | Sent, and they state the deadline | Sent, and they warn the seat can be taken |
+
+Question: D2 — R4-1: Should a weekly or monthly customer's seat or cabin be kept for them until a renewal deadline?
+Header: Renewal hold
+A) Keep it until a deadline (recommended)
+B) Don't keep it
+
+### currentDecision (R4-2)
+
+Commitment comparison:
+
+| Commitment | Source/approval or pending | Current | A | B |
+|---|---|---|---|---|
+| Going Active after the 14-day trial | FR-PL-062, US-9.1 | Add a payment method | A valid 100% code is enough; no payment method needed yet | Payment method required even with a code |
+| Payment method during the free period | pending (13 OQ48) | Not stated | Optional; reminders 30 and 7 days before the free period ends | Already on file |
+| At the end of the free period with no payment method | pending | Not stated | Tenant moves to the same state as a trial that ended without a payment method | Does not arise |
+| Invoices in free months | FR-SA-059 | ₹0 with a discount line | Unchanged | Unchanged |
+
+Question: D3 — R4-2: Must a tenant on a free offer code add a payment method before going live?
+Header: Free tenants
+A) No, only before the free period ends (recommended)
+B) Yes, payment method first
+
+### currentDecision (R4-3)
+
+Commitment comparison:
+
+| Commitment | Source/approval or pending | Current | A | B |
+|---|---|---|---|---|
+| Plan fee and server usage in free months | C19, FR-SA-059 | ₹0 | ₹0 | ₹0 |
+| SMS and WhatsApp messages in free months | Pricing Rule #6, 13 OQ48 (pending) | Tenant pays from the wallet | Paid from a monthly wallet credit set on the code (₹ amount, can be 0); above it the tenant pays | Tenant pays from the wallet |
+| Email | Pricing Rule #6 | From the wallet at the email slab price | Same wallet credit applies | From the wallet |
+| What SSPL pays | pending | Nothing for messages | The credit amount per free tenant per month, at most | Nothing for messages |
+| What the offer screen says | FR-TA-183 | "100% off the plan fee and server usage" | Adds "and ₹X of messages each month" when the credit is above 0 | States plainly that messages are paid |
+
+Question: D4 — R4-3: Should the free offer code also cover messages (SMS, WhatsApp, email)?
+Header: Free messages
+A) Yes, a monthly message credit set on the code (recommended)
+B) No, messages stay paid
+
+### Review body (CEO review 4)
+
+**Current scope.** Mode HOLD SCOPE (D1, product owner's answer, 2026-11-11). Accepted: all of C15 to C19 as written in pack v0.5, plus R4-1 (renewal hold, D2: A), R4-2 (no payment method until the free period ends, D3: A) and R4-3 (monthly message credit on the offer code, D4: A). Deferred: seat suggestions read from the plan (FR-TA-068l, already unscheduled in the pack, 13 OQ43). Rejected: none. Pending: none in this ledger.
+
+**System audit.** TODOS.md still listed the floor photo as P3 "only if owners ask"; corrected to point at C15. C19 reverses the 2026-11-04 decision "free pilot programme removed"; the owner made that call on 2026-11-11. `docs/research/` does not exist: no owner interview backs any v0.5 feature. Scope has grown after each scope-cutting review.
+
+**0G, HOLD checks.** 18 new requirement rows across four apps [measured: git diff of dbd879a]. Nothing can be deferred without reversing the owner's decision of 2026-11-11 (launch only when all features are complete), so no cut is proposed. Invariants kept: a booking points at a unit, never a grid cell; one booking per seat per time (database exclusion constraint); 0% commission.
+
+**0I, build sequence and effort [estimated; re-measure after sprint 3 pace].**
+
+```
+HOUR 1 (foundations)   Floor, SeatType, PriceRule by seat type, offer code tables; media rule for plan files
+HOUR 2-3 (core)        Price lookup unit > seat type > product; free seats counted per type; renewal hold as an allocation
+HOUR 4-5 (integration) Seat picker floors + price legend; publish check sees renewal holds; rating run applies code + credit
+HOUR 6+ (polish)       Alert timings, check-in refusal reasons, plan line-up controls on phones
+```
+
+| Item | Developer-weeks [estimated] | Who (14 §2) |
+|---|---|---|
+| C15 floors, plan upload, tracing, seat types, prices, picker | about 5 | A, B, C |
+| C16 renewals, alerts, renewal hold | about 2 | A, C, D |
+| C17 amenity list | under 1 | B, C |
+| C18 check-in code and window | about 1 | A, B, C |
+| C19 offer codes, message credit | about 1 | D |
+
+About 10 developer-weeks in total, which is about 3 calendar weeks for the four-developer team if the work runs in parallel. Launch moves from week 20 to about week 23 [estimated]. Design time for the new screens is not included.
+
+#### Section 1: Architecture
+
+```
+Tenant Admin ── Floors + plan file ──► Media store (private) ──► builder backdrop only
+     │                                                     
+     ├─ Seat types + prices ─► PriceRule (unit > seat type > product) ─► Quote ─► Checkout
+     ├─ Renewal rules ───────► Renewal hold (allocation) ─┐
+     ├─ Check-in rules ──────► Check-in validator ◄── QR or 6-digit code (staff only)
+Booking app ── Seat picker (floors, legend) ──► Availability (free seats per floor and type) ◄┘
+Super Admin ── Offer codes ──► Monthly rating run ──► ₹0 invoice + wallet credit
+```
+
+- **WARNING (eng review):** with seat types, the price depends on the seat picked, and "Any available seat" needs free seats counted per type. The availability engine must count per type, not per product.
+- **WARNING (eng review):** the renewal hold (R4-1) is a third thing that blocks a seat, after bookings and 10-minute checkout holds. It must live in the same allocation table and exclusion constraint, or two mechanisms will disagree about whether a seat is free.
+- **OK:** plan files are a builder aid and never reach customers, so they belong in private storage, not the public CDN.
+
+Renewal hold states: `booking active → hold open (until deadline) → renewed (new booking) | released`. A hold can't exist without its booking: cancelling or rescheduling the booking moves or ends the hold.
+Offer redemption states: `redeemed → active → ending soon (30 and 7 days) → ended → normal billing | trial-ended state (no payment method)`.
+Rollback posture: nothing is in production; all of v0.5 ships before launch. Server-side feature flags exist (FR-PL-061), so seat types and the renewal hold can be switched off per tenant.
+
+#### Section 2: Error and rescue map (capability level)
+
+| Capability | What can go wrong | Specified? | Customer or owner sees |
+|---|---|---|---|
+| Plan upload | Wrong type or over 10 MB | Yes (FR-TA-068g) | Rejected with the limit |
+| Plan upload | PDF or photo can't be read | **No** | Must say "We couldn't read this file, try a JPG or PNG" (eng review to specify) |
+| Publish map | Seat removed that has bookings | Yes (FR-TA-068c) | Publish check lists them |
+| Publish map | Seat removed that has a renewal hold | **No** | Must be listed like a future booking (eng review) |
+| Renew | Seat taken after the deadline | Yes (FR-BA-038) | Other free seats offered |
+| Renew | Payment fails or is abandoned | **No** | Hold must stay until the deadline, never longer (eng review) |
+| Ending alert | Wallet at its floor | Yes (Pricing Rule #6) | Email fallback |
+| Check-in | Wrong code, outside window, cancelled, duplicate | Yes (FR-TA-096a) | Reason shown |
+| Offer code | Used up, expired, paused | Partly (used up only) | Reason per case (eng review) |
+| Message credit | Monthly credit not applied | **No** | Must be applied in the rating run, once per tenant per month, with an alert to SSPL on failure (eng review) |
+
+#### Section 3: Security
+
+| Threat | Likelihood | Impact | Mitigated? |
+|---|---|---|---|
+| Malicious or oversized plan file (PDF parsing) | Med | Med | Partly: type and size limits. Eng review to add safe conversion to an image and private storage |
+| Guessing offer codes at public sign-up | Med | Med | No. Needs a rate limit and long random codes (eng review) |
+| Guessing a 6-digit check-in code | Low | Low | Yes: staff-only entry, pause after 5 wrong codes, valid only inside the window |
+| Staff checking in outside the window | Low | Low | Yes: Owner or Manager only, reason, audit |
+| SSPL attaching a free code to the wrong tenant | Low | Med | Yes: reason and audit (FR-SA-059) |
+
+No High severity findings.
+
+#### Section 4: Data flow and edge cases
+
+`plan file → type/size check → crop/rotate → private store → builder backdrop` (never to customers).
+`seat pick → price by unit > type > product → quote → hold re-quote → pay → booking`.
+
+| Interaction | Edge case | Handled? |
+|---|---|---|
+| Renew | Double tap | Yes: one checkout hold (existing rule) |
+| Renew | Booking cancelled while hold open | Hold must end (eng review to state) |
+| Renew | Booking rescheduled | Hold moves with the new end (eng review to state) |
+| Renew | Customer pays at the deadline instant while a stranger books | Must be decided by the exclusion constraint in one transaction; test both orders |
+| Seat types | Type changed after a customer was quoted | Yes: hold re-quotes (FR-BA-017) |
+| Seat types | Type changed on a seat with future bookings | Yes: publish check lists them |
+| Floors | A floor with no published map | Yes: not shown (FR-BA-013a) |
+| Check-in | Booking starts at opening time | Window opens before opening; staff may not be there (owner setting) |
+| Check-in | Booking over midnight or multi-day | Default: per day (13 OQ47) |
+| Check-in | Staff device offline | **Unknown**, same gap as QR check-in |
+| Offer code | Entered after invoices were already paid | Applies from the next invoice |
+| Offer code | Redeemed but tenant never goes live | **Unhandled**: the slot is used; SSPL removes it by hand (FR-SA-059) |
+
+Async invariant (R4-1): before the deadline only the current customer can book the unit for the next period. Mechanism required: the hold is an allocation row under the same exclusion constraint; release at the deadline is one statement; turning the hold into the renewal booking happens in the payment transaction.
+
+#### Section 5: Quality
+
+- Three labels now sit on a seat or space: tags, seat types and amenities. Each has a clear job in the pack (information, price, facilities), but owners may confuse them. Design review to check.
+- "Offer code" (SSPL to tenant) and "promo code" (tenant to customer) are separate on purpose. Share validation only where the rules are truly the same.
+
+#### Section 6: Tests
+
+No code exists, so no tests exist. Each new story (US-4.10 to 4.12, 6.5, 8.5 to 8.7, 10.9) carries Given/When/Then cases. Tests the build must add:
+
+| New thing | Test type | Failure or edge test |
+|---|---|---|
+| Price by unit, type, product | Unit | Type with no price falls back to the product price |
+| Free seats per type and floor | Integration | Counts match after a booking, a hold and an out-of-service change |
+| Renewal hold | Integration with controlled ordering | Stranger and current customer at the deadline, both orders |
+| Ending alerts | Integration with a fixed clock | No alert when renewed, cancelled or renewals are off |
+| Check-in window and code | Integration with a fixed clock | 1 second before the window; wrong location; reused code after reschedule |
+| Offer code and credit | Integration | Sixth redemption refused; credit applied once per month; no payment method at the end |
+| Plan upload and trace | End to end | Unreadable file; L-shaped floor publishes as an L |
+
+Flakiness risk: alerts, check-in and offer periods all depend on time; tests need an injected clock in Asia/Kolkata.
+
+#### Section 7: Performance
+
+- Floor tabs need the free-seat count for every floor in one query, inside the seat map's cache of a few seconds (NFR-PERF-07).
+- Hourly "extend" alerts need a job that runs every few minutes and an index on booking end time.
+- A 10 MB plan image must be scaled down before it is sent to the builder on a phone.
+
+#### Section 8: Observability
+
+Wanted on day one: alerts sent and renewals made per tenant, holds released without renewal, check-in refusals by reason and override count, plan upload failures, offer codes with tenants and waived amount (already in FR-SA-059). Two gaps: no alert is specified for the ending-alert job falling behind, or for the monthly message credit failing.
+
+#### Section 9: Rollout
+
+One risk: the first 3 to 5 tenants arrive in build weeks 17–18 and depend on offer codes, tracing and renewals all working. Put seat types and the renewal hold behind server-side flags so a fault in one doesn't stop a first tenant going live. Migrations are additive.
+
+#### Section 10: Long-term trajectory
+
+Reversibility 4/5 while these are requirements; about 3/5 once tenants have priced by seat type. Debt: (1) renewals by reminder and Phase 2 memberships are two ways to keep a cabin every month, so memberships should build on the renewal hold; (2) pack files 03, 06, 07 and 10 still describe v0.4; (3) this design doc's "Seat maps" section is annotated, not rewritten.
+
+#### Section 11: Design and UX
+
+```
+Owner:    Floors list → upload plan → fit grid → paint → seat types → prices → preview → publish
+Customer: date/time → floor tab → seat (shape, price) → pay → pass (QR + code) → ending alert → Renew
+Staff:    Today → scan or type code → reason or checked in
+```
+
+| Feature | Loading | Empty | Error | Success | Partial |
+|---|---|---|---|---|---|
+| Plan upload | not specified | "No plan yet" | not specified | plan behind grid | not specified |
+| Seat picker with floors | existing skeleton | floor with no free seats: not specified | existing | pick shown | some floors unpublished: hidden |
+| Renew | not specified | not specified | seat taken: specified | new confirmation | payment abandoned: not specified |
+| Check-in | not specified | not specified | reasons specified | checked in | not specified |
+
+- **WARNING:** a seat cell must now show a state colour, a type colour band, a partition shape and a label. At 24px on a phone that is too much. Design review to decide what gives way.
+- **WARNING:** Design Review 3 covered the v0.4 builder and picker, not any v0.5 screen.
+- Responsive: the plan line-up step needs the same phone treatment as the builder (DR3-11A).
+
+Recommend `/plan-design-review` for the v0.5 screens before they are built.
+
+### Outside voice
+
+Unavailable. The Codex CLI is not installed, and this session has no way to run the bounded native fallback. No second opinion was obtained for this review.
+
+### NOT in scope
+
+- **Deferred:** seat suggestions read from the uploaded plan (FR-TA-068l). Already unscheduled in the pack; accuracy untested (13 OQ43).
+- **Rejected:** none.
+- **Outside this review:** membership auto-renewal (Phase 2, unchanged).
+
+### What already exists
+
+Cancel, reschedule, QR check-in, amenities on products, a price per unit, the notification wallet, SSPL wallet adjustments, the tenant state model and server-side feature flags were in v0.4. v0.5 reuses all of them.
+
+### Dream state delta
+
+v0.5 with R4-1 to R4-3 reaches the 12-month ideal on "the map is the real floor", "regulars keep their seat" and "a free start that is truly free". Still short: the owner can't see renewal performance beyond the Today list, and setup speed depends on how well tracing works on real plans.
+
+### Failure modes registry (capability level)
+
+| Capability | Failure mode | Rescued? | Test? | User sees? | Logged? |
+|---|---|---|---|---|---|
+| Plan upload | Unreadable file | unknown (eng) | unknown | to be specified | unknown |
+| Renewal hold | Hold and booking disagree | unknown (eng) | required: both orders | n/a | unknown |
+| Renewal | Payment abandoned | unknown (eng) | unknown | to be specified | unknown |
+| Publish map | Seat with renewal hold removed | unknown (eng) | unknown | to be specified | yes (audit) |
+| Message credit | Credit not applied | unknown (eng) | unknown | to be specified | unknown |
+| Offer code | Guessed at sign-up | N (eng) | unknown | n/a | unknown |
+| Check-in | Device offline | N | N | existing gap | unknown |
+
+7 rows, 0 CRITICAL GAPS confirmed. Six rows are unknown and owned by the eng review; none is confirmed silent, because nothing is built.
+
+### Implementation Tasks
+
+Synthesized from this review's findings.
+
+- [ ] **T1 (P1, human: ~3h / CC: ~20min)** — build plan — Re-estimate `14-build-plan.md` with v0.5 and state the new launch week
+  - Surfaced by: 0I — about 10 developer-weeks added, week 20 predates v0.5
+  - Files: docs/requirements/14-build-plan.md, docs/requirements/12-release-plan.md
+  - Verify: every v0.5 story (US-4.10, 4.11, 4.12, 6.5, 8.5, 8.6, 8.7, 10.9) appears in a sprint row
+- [ ] **T2 (P1, human: ~1 day / CC: ~1h)** — architecture — Run `/plan-eng-review` on v0.5
+  - Surfaced by: Sections 1, 2, 3, 4 — availability per seat type, renewal hold in the allocation table, publish check and renewal holds, message credit in the rating run, offer code rate limit, plan file handling
+  - Files: docs/designs/cowos-platform-v1.md, docs/requirements/08-architecture.md, docs/requirements/09-data-model.md
+  - Verify: each unknown row in the failure modes registry has a named rescue and test
+- [ ] **T3 (P1, human: ~1 day / CC: ~1h)** — design — Run `/plan-design-review` on the v0.5 screens
+  - Surfaced by: Section 11 — overloaded seat cell on phones; no v0.5 screen was in Design Review 3
+  - Files: docs/designs/cowos-platform-v1.md
+  - Verify: every "not specified" cell in the Section 11 state table is filled
+- [ ] **T4 (P2, human: ~1 day / CC: ~30min)** — pack — Bring pack files 03, 06, 07 and 10 up to v0.5
+  - Surfaced by: Section 10 — they still describe v0.4
+  - Files: docs/requirements/03-business-requirements.md, 06-user-flows.md, 07-non-functional-requirements.md, 10-api-modules.md
+  - Verify: each FR added in v0.5 is referenced by a flow or an endpoint
+- [ ] **T5 (P2, human: ~2 days / CC: n/a)** — validation — Collect 3 to 5 real floor plans from candidate tenants and trace them by hand
+  - Surfaced by: 0A — no owner evidence; R34
+  - Files: to be determined
+  - Verify: each plan traced on paper to a grid within the 40 × 60 limit
+
+### Completion Summary
+
+```
++====================================================================+
+|            MEGA PLAN REVIEW — COMPLETION SUMMARY                   |
++====================================================================+
+| Mode selected        | HOLD SCOPE                                  |
+| System Audit         | stale TODO fixed; C19 reverses a prior      |
+|                      | decision; no owner research exists          |
+| Step 0               | HOLD SCOPE; 3 decisions (R4-1, R4-2, R4-3)  |
+| Section 1  (Arch)    | 2 issues found                              |
+| Section 2  (Errors)  | 10 error paths mapped, 4 GAPS (unspecified) |
+| Section 3  (Security)| 2 issues found, 0 High severity             |
+| Section 4  (Data/UX) | 12 edge cases mapped, 2 unhandled           |
+| Section 5  (Quality) | 2 issues found                              |
+| Section 6  (Tests)   | Diagram produced, 7 test areas to build     |
+| Section 7  (Perf)    | 3 issues found                              |
+| Section 8  (Observ)  | 2 gaps found                                |
+| Section 9  (Deploy)  | 1 risk flagged                              |
+| Section 10 (Future)  | Reversibility: 4/5, debt items: 3           |
+| Section 11 (Design)  | 3 issues                                    |
++--------------------------------------------------------------------+
+| NOT in scope         | written (1 deferred, 0 rejected)            |
+| What already exists  | written                                     |
+| Dream state delta    | written                                     |
+| Error/rescue registry| 10 rows, 0 CRITICAL GAPS                    |
+| Failure modes        | 7 total, 0 CRITICAL GAPS (6 unknown, eng)   |
+| TODOS.md updates     | 0 items proposed (1 stale entry corrected)  |
+| Scope proposals      | 0 proposed, 0 accepted (HOLD SCOPE)         |
+| CEO plan             | skipped by mode                             |
+| Outside voice        | codex unavailable (CLI not installed)       |
+| Lake Score           | N/A (no question offered a 10/10 option)    |
+| Diagrams produced    | 4 (architecture, states, data flow, user    |
+|                      | flow)                                       |
+| Stale diagrams found | 0 checked in this file; pack 06 flows are   |
+|                      | stale for v0.5 (T4)                         |
+| Unresolved decisions | 0                                           |
+| Reality rows         | 7/7 rows (PLAN_REALITY), 4 unverified       |
++====================================================================+
+```
+
+REALITY: premise-table finding unverified=4 docs/requirements/04-software-requirements-specification.md:132
+REALITY: already-done pass v0.5 requirements committed as dbd879a, no build exists CLAUDE.md:3
+REALITY: surface-check pass no CLI command or route is named in C15 to C19 docs/requirements/10-api-modules.md:3
+REALITY: binding-decisions finding C19 reverses "free pilot programme removed" (2026-11-04) by owner decision CLAUDE.md:18
+REALITY: numbers finding week 20 [estimated] predates v0.5; 18 new rows [measured: git diff] docs/requirements/14-build-plan.md:64
+REALITY: deferred-asks pass seat suggestion from the plan left unscheduled with its reason docs/requirements/04-software-requirements-specification.md:137
+REALITY: pr-count pass default one PR per wave; no code yet docs/requirements/14-build-plan.md:41
+
+Approval readiness: PASS. R4-1 (D2 answer A, 2026-11-11), R4-2 (D3 answer A, 2026-11-11), R4-3 (D4 answer A, 2026-11-11); mode D1 (HOLD SCOPE). The pack applies exactly those three answers: FR-TA-084, FR-BA-038, FR-SA-059, FR-TA-183, 13 OQ46 and OQ48, 09 data model.
+
+## Eng Review 6: pack v0.5, C15 to C19 (2026-11-11)
+
+Target (fixed): pack v0.5 (C15 to C19) as amended by CEO review 4 (R4-1 to R4-3). No code exists; findings concern requirements.
+
+Scope record: feature answers: none asked (the owner fixed the feature list on 2026-11-11; CEO review 4, HOLD SCOPE); structure: Smaller arrangement (D1 answer, 2026-11-11); accepted scope: all of C15 to C19 with R4-1 to R4-3, built with 4 new tables (Floor, SeatType, PlatformOfferCode, PlatformOfferRedemption), new columns on existing tables, no new background jobs and no new services: ending alerts run in the existing reminder job, renewal holds expire through the existing hold-expiry job (FR-PL-051), the free invoice and message credit happen inside the monthly rating run (FR-PL-060), check-in by code uses the existing check-in path (FR-TA-096); pending remedies: R5-2, R5-3, R5-4.
+
+Carried forward without a question: the renewal hold is an allocation under the same exclusion constraint as bookings (one capacity source, eng review 5 D3; behaviour approved as R4-1); a map publish treats a seat with a renewal hold like a seat with a future booking (FR-TA-068c plus R4-1); the monthly message credit is applied once per tenant per month inside the rating run (R4-3).
+
+## Decision ledger
+
+### R5-2: what "Any available seat" does when a product has several seat types
+Finding: 1, P1, confidence 8/10, docs/requirements/04-software-requirements-specification.md:282 ("When a product has more than one seat type, \"Any available seat\" asks for the type first (13 OQ45)"), eng review 6
+Plan baseline: the pack's default (13 OQ45), never approved: the customer picks the type first
+Runtime evidence: unknown; nothing is built
+Comparison grid:
+
+| Choice | Current | A | B |
+|---|---|---|---|
+| R5-2 any seat with several types | Type first (unapproved default) | Customer picks a seat type, then gets any free seat of that type | Cowos assigns the cheapest free seat |
+| Price shown before checkout | pending | Exact price of the chosen type | "From" price; the exact price is fixed when the seat is assigned at the hold |
+| R5-3 offer code entry | pending | pending | pending |
+| R5-4 plan file types | pending | pending | pending |
+
+Question D2:
+D2 — R5-2: When a desk product has several seat types, what should "Any available seat" do?
+Project/branch/task: Cowos on main, engineering review of pack v0.5, seat-type pricing (C15).
+ELI10: Seat types now have different prices, for example open desk ₹400 and cubicle ₹650. "Any available seat" is the one-tap fast path where the customer does not pick a seat. With different prices, the app must know which price to charge before the customer pays. Either the customer says which type they want first, or Cowos always gives them the cheapest free seat.
+Stakes if we pick wrong: If the price can change between what the customer saw and what they are charged, they abandon checkout or dispute the payment.
+Recommendation: Pick the type first because the customer sees the exact price before paying and never gets a seat type they did not expect.
+Completeness: A=9/10, B=7/10
+Pros / cons are on each option.
+Net: A adds one tap and gives a fixed price; B keeps one tap but the price is only final at the last step.
+Header: Any seat
+Options:
+A) Pick the type first (recommended)
+The customer chooses a seat type with its price, then "Any available seat" assigns a free seat of that type. A product with one seat type keeps the one-tap path unchanged. (human: ~1 day / CC: ~30 min), low risk, no extra maintenance. ✅ The price the customer sees is the price charged, because the type is fixed before checkout starts. ✅ Free seats are counted per type, which the seat map legend needs anyway. ❌ One extra tap on the fast path for products that have more than one seat type.
+B) Cheapest free seat
+Cowos assigns the cheapest free seat automatically; the screen shows a "from" price and the exact price is fixed when the seat is assigned at the hold. (human: ~1 day / CC: ~30 min), medium risk, extra care in the price re-quote. ✅ The fast path stays one tap for every product, whatever its seat types. ✅ The customer always gets the lowest price available at that moment. ❌ The price can rise between the first screen and the hold when cheaper seats sell out, which customers read as a bait price.
+
+State: approved
+Actual answer: A) Pick the type first (D2 answer, 2026-11-11)
+Accepted scope: the customer chooses a seat type with its price, then "Any available seat" assigns a free seat of that type; a product with one seat type keeps the one-tap path; applied in FR-BA-013a and 13 OQ45
+History: none
+
+### R5-3: where a tenant enters an SSPL offer code
+Finding: 2, P1, confidence 8/10, docs/requirements/04-software-requirements-specification.md:230 ("the Owner can enter a code from SSPL at sign-up (FR-MW-005) or on the Billing page"), eng review 6
+Plan baseline: the pack as written (FR-TA-183), requested 2026-11-11: sign-up or Billing, no limit on attempts stated
+Runtime evidence: unknown; nothing is built
+Comparison grid:
+
+| Choice | Current | A | B |
+|---|---|---|---|
+| R5-3 offer code entry | Public sign-up form or Billing page, no attempt limit | Billing page only, after login; 5 attempts per hour per tenant | Public sign-up form and Billing page; 5 attempts per hour per IP address; codes at least 10 random characters |
+| SSPL attaching a code to a tenant | FR-SA-059 | unchanged | unchanged |
+| R5-2 any seat with several types | per D2 answer | per D2 answer | per D2 answer |
+| R5-4 plan file types | pending | pending | pending |
+
+Question D3:
+D3 — R5-3: Where should a tenant be able to enter a free offer code?
+Project/branch/task: Cowos on main, engineering review of pack v0.5, launch offer codes (C19).
+ELI10: An offer code is worth months of free service, and only 3 to 5 exist. The pack lets anyone type a code into the public sign-up form on cowos.in, with no limit on tries. A stranger could keep guessing until a code works and take a free slot meant for a tenant you picked. Nothing is billed during the 14-day trial, so a tenant loses nothing by entering the code after signing in.
+Stakes if we pick wrong: A guessed code hands a free period to the wrong business and uses up one of the few slots.
+Recommendation: Billing page only because it removes guessing from the public site entirely and costs the real tenant nothing during the trial.
+Completeness: A=9/10, B=8/10
+Pros / cons are on each option.
+Net: A closes the public door and adds one step after sign-up; B keeps the code at sign-up and relies on limits to slow guessing.
+Header: Code entry
+Options:
+A) Billing page only (recommended)
+The sign-up form has no code field. The Owner enters the code on the Billing page during the 14-day trial, limited to 5 attempts per hour per tenant, and the setup checklist reminds them. SSPL can still attach a code to a tenant. (human: ~0.5 day / CC: ~15 min), low risk, no extra maintenance. ✅ Nobody can try codes without first creating and verifying a tenant account. ✅ One place to enter a code, so one screen to build and test. ❌ A tenant with a code must remember to enter it after sign-up, though the checklist reminds them.
+B) Sign-up and Billing with limits
+Keep the code field on the public sign-up form and on Billing. Limit attempts to 5 per hour per IP address and require codes of at least 10 random characters. (human: ~1 day / CC: ~30 min), medium risk, the limit needs tuning and monitoring. ✅ A tenant with a code sees the free offer confirmed from the first screen. ✅ Long random codes make a correct guess very unlikely even without the limit. ❌ The public form stays a target, and a per-IP limit is weak against guessing from many addresses.
+
+State: approved
+Actual answer: A) Billing page only (D3 answer, 2026-11-11)
+Accepted scope: no code field on public sign-up; the Owner enters the code on the Billing page during the trial, 5 attempts per hour per tenant, checklist reminder; SSPL can still attach a code; applied in FR-TA-183 and 00 C19
+History: none
+
+### R5-4: which floor plan file types are accepted at launch
+Finding: 3, P1, confidence 7/10, docs/requirements/04-software-requirements-specification.md:132 ("can upload one floor plan per floor (PDF, JPG or PNG up to 10 MB"), eng review 6
+Plan baseline: the pack as written (FR-TA-068g), requested 2026-11-11: PDF, JPG or PNG up to 10 MB
+Runtime evidence: unknown; nothing is built. Hosting is one app server that runs every tenant's API, admin and booking app (Pricing Rule #11)
+Comparison grid:
+
+| Choice | Current | A | B |
+|---|---|---|---|
+| R5-4 plan file types | PDF, JPG, PNG up to 10 MB; no handling stated | JPG and PNG only, up to 10 MB and 8000 pixels a side; re-encoded and stripped of metadata; stored privately | JPG, PNG and PDF; the first PDF page is converted to an image in an isolated worker with time and memory limits; same image rules |
+| New dependency | none | none | a PDF rendering library (licence to check) |
+| Owner with only a PDF | accepted | Told to save or screenshot the page as an image | accepted |
+| R5-2, R5-3 | per D2 and D3 answers | per D2 and D3 answers | per D2 and D3 answers |
+
+Question D4:
+D4 — R5-4: Should floor plan upload accept PDFs at launch, or images only?
+Project/branch/task: Cowos on main, engineering review of pack v0.5, floor plan upload (C15).
+ELI10: Owners will upload a picture of their floor to trace over. Photos and screenshots are simple to handle safely. PDFs are not: turning a PDF into a picture needs an extra software library, and a broken or hostile PDF can use up the memory of the server. Cowos runs every tenant on one server, so one bad PDF could slow or stop bookings for everyone. Architects often send plans as PDF, though I have not verified how common that is for your owners.
+Stakes if we pick wrong: Accepting PDFs without care risks the single server; refusing them makes some owners take an extra step before they can start.
+Recommendation: Images only because one hostile PDF could affect every tenant on the single server, and a screenshot of the PDF works just as well for tracing.
+Completeness: A=7/10, B=10/10
+Pros / cons are on each option.
+Net: A is safe and small but asks PDF owners for one extra step; B is the complete experience at the cost of a new library and a guarded conversion step.
+Header: Plan files
+Options:
+A) Images only at launch (recommended)
+Accept JPG and PNG up to 10 MB and 8000 pixels a side; re-encode every image, strip its metadata and store it privately. The upload screen tells an owner with a PDF to save or screenshot the page as an image. (human: ~1 day / CC: ~30 min), low risk, no new dependency. ✅ No PDF software runs on the one server that every tenant shares. ✅ Reuses the image pipeline already planned for photos and logos. ❌ An owner whose plan is a PDF has to turn it into an image first.
+B) Images and PDF
+Also accept PDF: the first page is converted to an image in an isolated worker with time and memory limits, then handled like any image. (human: ~1 week / CC: ~1 day), medium risk, a new library to patch and a licence to check. ✅ An owner uploads whatever the architect sent, with no extra step. ✅ Matches the pack as you requested it on 2026-11-11. ❌ Adds PDF rendering to a single shared server, which needs limits, isolation and ongoing security patches.
+
+State: approved
+Actual answer: B) Images and PDF (D4 answer, 2026-11-11)
+Accepted scope: JPG, PNG and PDF; the first PDF page is converted to an image in an isolated worker with time and memory limits; images re-encoded, stripped of metadata, stored privately; a new PDF rendering library whose licence must be checked; applied in FR-TA-068g
+History: none
+
+Approval readiness: PASS. Structure: D1 answer "Smaller arrangement" (2026-11-11). R5-2: D2 answer A (2026-11-11). R5-3: D3 answer A (2026-11-11). R5-4: D4 answer B (2026-11-11). Carried forward without a question: renewal hold under the booking exclusion constraint (eng review 5 D3 and CEO review 4 R4-1), publish check counts renewal holds (FR-TA-068c and R4-1), message credit inside the rating run (R4-3).
+
+### Review body (eng review 6)
+
+Scope Challenge result: scope accepted as-is. The feature list is unchanged; the smaller arrangement changes how it is built, not what is built.
+
+#### 1. Architecture
+
+```
+                       ┌────────────── existing jobs (no new ones) ──────────────┐
+Reminder job ── booking reminders + "booking ending" alerts (≤ 5 min cadence)     │
+Hold-expiry job ── 10-minute checkout holds + renewal holds past their deadline   │
+Monthly rating run ── invoices + offer discount line + monthly message credit     │
+                       └──────────────────────────────────────────────────────────┘
+Allocation (one exclusion constraint): booking | checkout hold | renewal hold
+Price lookup (one place): unit → seat type → product   used by quote, hold re-quote, renewal, staff booking
+Plan upload: JPG/PNG → re-encode → private store
+             PDF → isolated worker (time + memory limits, one at a time) → first page as image → private store
+Offer code: Billing page (signed in, 5 tries/hour) or SSPL attach → redemption → rating run
+```
+
+- `[P1] (confidence: 8/10) docs/requirements/04-software-requirements-specification.md:282` — "Any available seat" had no fixed price once seat types have different prices. Resolved: type first (R5-2).
+- `[P1] (confidence: 8/10) docs/requirements/04-software-requirements-specification.md:230` — offer codes could be guessed on the public sign-up form with no attempt limit. Resolved: Billing page only (R5-3).
+- `[P1] (confidence: 8/10) docs/requirements/04-software-requirements-specification.md:151` — the renewal hold would be a second source of "is this seat free". Resolved: same exclusion constraint; availability ignores a hold past its deadline, so a stopped job can't block seats.
+- `[P1] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:132` — PDF conversion parses untrusted files in native code on the one server every tenant shares. Accepted with guards (R5-4): isolated worker, time and memory limits, one conversion at a time, first page only, 10 MB cap. Residual risk: the PDF library must be kept patched.
+- `[P2] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:135` — three price levels (unit, seat type, product) invite four different lookups. Carried into FR-TA-068j: one lookup used everywhere.
+- `[P2] (confidence: 6/10) docs/requirements/04-software-requirements-specification.md:366` — Medium confidence, verify this is actually an issue: a 100% code produces ₹0 invoices, and ₹0 invoices are still an open metering question in this design doc (Open Question 7). The CA review of invoices must cover a ₹0 invoice with a discount line.
+
+Dispositions: 1 accepted (D2), 2 accepted (D3), 3 carried forward (eng review 5 D3, R4-1), 4 accepted with guards (D4), 5 carried into FR-TA-068j, 6 pending verification by the CA review (task T4).
+
+#### 2. Code quality
+
+- `[P2] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:166` — QR check-in and code check-in must share one validator and one list of refusal reasons, or the two paths will drift. Carried forward as necessary implementation of FR-TA-096a.
+- `[P2] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:366` — SSPL offer codes and tenant promo codes look alike but differ in owner, table and what they discount. Do not extract a shared helper; both callers are proposed, not existing, and their rules differ.
+- `[P3] (confidence: 8/10) docs/requirements/10-api-modules.md:3` — pack files 03, 06, 07 and 10 still describe v0.4; the API list has no v0.5 endpoint.
+
+Dispositions: 1 carried forward, 2 no extraction, 3 task T5.
+
+#### 3. Tests
+
+Test framework: none exists yet. The build plan names tests written first and Playwright for end-to-end flows (14 §2). No framework choice is proposed here.
+
+```
+CODE PATHS                                              USER FLOWS
+[+] Price lookup (unit → type → product)                [+] Owner traces a floor
+  ├── [GAP] unit price wins                               ├── [GAP] [→E2E] upload image, fit grid, paint, publish
+  ├── [GAP] type price, no unit price                     ├── [GAP] upload PDF: first page becomes the backdrop
+  └── [GAP] falls back to product price                   └── [GAP] unreadable file: clear message
+[+] Free seats per floor and type                       [+] Customer picks a priced seat
+  ├── [GAP] after booking, hold, out of service           ├── [GAP] [→E2E] floor tab, type, seat, pay, pass
+  └── [GAP] floor with no published map                   └── [GAP] any seat: type first, price unchanged at pay
+[+] Renewal hold                                        [+] Renew
+  ├── [GAP] stranger blocked before deadline              ├── [GAP] [→E2E] alert, Renew, same cabin, new invoice
+  ├── [GAP] open to all after deadline, job stopped       ├── [GAP] payment abandoned: hold ends at deadline
+  ├── [GAP] both orders at the deadline instant           └── [GAP] cabin taken after deadline: others offered
+  └── [GAP] cancel ends it, reschedule moves it         [+] Check-in
+[+] Ending alerts in the reminder job                     ├── [GAP] [→E2E] scan or type code inside the window
+  └── [GAP] none when renewed, cancelled or off           ├── [GAP] 1 second before the window: refused with time
+[+] Check-in validator (QR and code)                      └── [GAP] Manager override with reason is audited
+  └── [GAP] wrong location, reused code, lockout        [+] Free start
+[+] Offer code in the rating run                          ├── [GAP] [→E2E] code on Billing, ₹0 invoice, credit
+  ├── [GAP] ₹0 invoice with discount line                 ├── [GAP] sixth redemption and 6th try in an hour refused
+  ├── [GAP] credit once per tenant per month              └── [GAP] no payment method at the end: trial-ended state
+  └── [GAP] no code field on public sign-up
+[+] PDF conversion worker
+  ├── [GAP] time limit and memory limit enforced
+  └── [GAP] second conversion waits for the first
+
+COVERAGE: 0/33 paths tested (0%)  |  Code paths: 0/18  |  User flows: 0/15
+QUALITY: none exist  |  GAPS: 33 (5 E2E, 0 eval)
+```
+
+Legend: [GAP] = no test yet | [→E2E] = needs an end-to-end test
+
+No regression risk: no existing behaviour is in production. All 33 tests are required proof of approved behaviour and are built with the features. Time-dependent tests (alerts, holds, check-in window, offer periods) need an injected clock in Asia/Kolkata. The renewal hold needs a test with controlled ordering at the deadline.
+
+Dispositions: 8 gap areas, all carried into the build as required proof (no optional test depth proposed).
+
+#### 4. Performance
+
+- `[P2] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:282` — floor tabs need free-seat counts for every floor; a query per floor is an N+1. Scale: up to 10 maps of 40 × 60 cells, 24,000 cells per location at the limit [measured: FR-TA-068d]. Carried into FR-BA-013a: one grouped query, cached with the seat map.
+- `[P2] (confidence: 6/10) docs/requirements/04-software-requirements-specification.md:151` — Medium confidence, verify this is actually an issue: hourly "extend" alerts 15 minutes before the end need the reminder job to run at least every 5 minutes and an index on booking end time. Request volume unknown.
+- `[P2] (confidence: 7/10) docs/requirements/04-software-requirements-specification.md:132` — PDF conversion is CPU and memory heavy on the shared server. Limits are in FR-TA-068g; exact values (seconds, megabytes, pixels) are set when the library is chosen.
+
+Dispositions: 1 carried into FR-BA-013a, 2 carried into FR-TA-084, 3 accepted with D4.
+
+### Outside voice
+
+Unavailable. The Codex CLI is not installed and this session cannot run the bounded native fallback. No second opinion was obtained.
+
+### NOT in scope
+
+- Seat suggestions read from the uploaded plan (FR-TA-068l): unscheduled in the pack; accuracy untested.
+- Multi-page PDFs: only the first page is used, to bound conversion cost.
+- Membership auto-renewal: Phase 2, unchanged.
+
+### What already exists
+
+Designed in v0.4 and reused by v0.5 (none built yet): the booking exclusion constraint and 10-minute checkout holds, the hold-expiry job (FR-PL-051), the reminder job (FR-BA-040), the monthly rating run (FR-PL-060), SSPL wallet adjustments (FR-SA-024), QR check-in (FR-TA-096), Amenity and LocationAmenity, the media pipeline, server-side feature flags (FR-PL-061). No shared-code extraction is proposed.
+
+PDF conversion library candidates for T3, from one web search (not evaluated in depth): PDFium-based open-source wrappers such as PDFtoImage (MIT per its listing). PDFium is native code parsing untrusted input, so the limits and isolation above are required whichever is chosen.
+
+### Failure modes
+
+| Path | Realistic failure | Test | Error handling | User sees |
+|---|---|---|---|---|
+| PDF conversion | Hostile or huge PDF | required | time and memory limits, isolated worker | "We couldn't read this file. Try a JPG or PNG." |
+| Renewal hold | Hold-expiry job stopped | required | availability ignores holds past the deadline | Nothing; seat is bookable |
+| Renewal hold | Stranger and customer at the deadline | required | exclusion constraint, one transaction | Loser sees "just booked" |
+| Ending alerts | Reminder job behind | none specified | job lag alarm needed (T2) | Late or missing alert |
+| Message credit | Rating run fails mid-way | required | once per tenant per month, alert to SSPL | Credit arrives on retry |
+| Offer code | Guessing | required | signed-in only, 5 tries per hour | Reason shown |
+| Check-in | Staff device offline | none | none (same as QR in v0.4) | Staff can't validate |
+
+0 critical gaps. Two rows have no specified handling: alert lag (task T2) and offline check-in (pre-existing in v0.4, not introduced here).
+
+### Worktree parallelization strategy
+
+| Step | Modules touched | Depends on |
+|---|---|---|
+| 1. Schema and price lookup | api inventory, api pricing | — |
+| 2. Floors, plan upload, tracing, seat types | tenant-admin, api inventory, media | 1 |
+| 3. Seat picker floors, legend, type first | booking-app, api availability | 1 |
+| 4. Renewal hold, renew, ending alerts | api bookings, reminder job, booking-app | 1 |
+| 5. Check-in window and code, amenities | api bookings, tenant-admin, booking-app | — |
+| 6. Offer codes and message credit | api billing, super-admin, tenant-admin billing | — |
+
+Parallel lanes: Lane A: 1 → 2. Lane B: 3 (after 1). Lane C: 4 (after 1). Lane D: 5. Lane E: 6.
+Execution order: build step 1 first. Then launch 2, 3, 4 with 5 and 6 already running. Merge 5 and 6 any time.
+Conflict flags: steps 3, 4 and 5 all touch booking-app; steps 2 and 5 both touch tenant-admin. Sequence merges within each app.
+
+### Implementation Tasks
+
+Synthesized from this review's findings.
+
+- [ ] **T1 (P1, human: ~2 days / CC: ~2h)** — api bookings — Add the renewal hold as an allocation under the booking exclusion constraint
+  - Surfaced by: Architecture — second source of "is this seat free" (04 spec:151)
+  - Files: to be determined (no code yet); requirement in docs/requirements/04-software-requirements-specification.md FR-TA-084
+  - Verify: integration test with controlled ordering: stranger blocked before the deadline, allowed after it with the job stopped, one winner at the deadline instant
+- [ ] **T2 (P1, human: ~1 day / CC: ~1h)** — reminder job — Send ending alerts from the reminder job at a cadence of 5 minutes or less, with a lag alarm
+  - Surfaced by: Performance and Failure modes — hourly alerts, no handling for a job that falls behind
+  - Files: to be determined
+  - Verify: fixed-clock test: alert at 15 minutes for an hourly booking; none when renewed, cancelled or off; alarm fires when lag exceeds 10 minutes
+- [ ] **T3 (P1, human: ~1 week / CC: ~1 day)** — media — Convert the first page of an uploaded PDF in an isolated worker with limits
+  - Surfaced by: Architecture — untrusted PDF parsing on the shared server (04 spec:132), decision D4
+  - Files: to be determined; record the chosen library and its licence in docs/requirements/11-integrations.md
+  - Verify: a PDF over the time or memory limit is refused with the specified message and the API stays responsive during conversion
+- [ ] **T4 (P1, human: ~2h / CC: n/a)** — billing — Have the CA review cover a ₹0 invoice with a discount line
+  - Surfaced by: Architecture — ₹0 invoices are an open metering question (04 spec:366)
+  - Files: docs/requirements/13-risks-open-questions-decisions.md
+  - Verify: the CA's answer is recorded against the ₹0 invoice question
+- [ ] **T5 (P2, human: ~1 day / CC: ~30min)** — pack — Update pack files 03, 06, 07 and 10 for v0.5, including the new endpoints
+  - Surfaced by: Code quality — the API list has no v0.5 endpoint (10 api-modules:3)
+  - Files: docs/requirements/03-business-requirements.md, docs/requirements/06-user-flows.md, docs/requirements/07-non-functional-requirements.md, docs/requirements/10-api-modules.md
+  - Verify: each FR added in v0.5 is referenced by a flow or an endpoint
+- [ ] **T6 (P1, human: ~1 day / CC: ~1h)** — api pricing — Build one price lookup (unit, seat type, product) and count free seats per floor and type in one query
+  - Surfaced by: Architecture and Performance — four possible lookups; N+1 on floor tabs (04 spec:135, 04 spec:282)
+  - Files: to be determined
+  - Verify: unit tests for the three fallback levels; the seat map endpoint issues one count query for a 3-floor location
+
+### Completion summary
+
+- Step 0: Scope Challenge — scope accepted as-is (smaller arrangement: no new jobs or services)
+- Reality rows: 7/7 applicable rows emitted (`PLAN_REALITY` line), 2 unverified premises
+- Architecture Review: 6 issues found
+- Code Quality Review: 3 issues found
+- Test Review: diagram produced, 33 gaps identified in 8 areas (nothing is built)
+- Performance Review: 3 issues found
+- NOT in scope: written
+- What already exists: written
+- TODOS.md updates: 0 items proposed to user
+- Failure modes: 0 critical gaps flagged
+- Unresolved decisions: 0 in this review
+- Outside voice: codex, unavailable (CLI not installed)
+- Parallelization: 5 lanes, 4 parallel / 1 sequential first step
+- Lake Score: 1/3 = answers picking a 10/10 option / answers scored for Completeness (D4 chose its 10/10 option; D2 and D3 offered no 10/10 option)
+
+REALITY: premise-table finding unverified=2 (PDF plans are common; owners would enter codes at sign-up) docs/requirements/04-software-requirements-specification.md:132
+REALITY: already-done pass no implementation exists; v0.5 requirements in dbd879a plus uncommitted review edits docs/designs/cowos-platform-v1.md:4787
+REALITY: surface-check pass no route or command is named by C15 to C19; pack 10 lists none for v0.5 docs/requirements/10-api-modules.md:3
+REALITY: binding-decisions pass one capacity source (eng review 5 D3) and R4-1 to R4-3 honored docs/requirements/04-software-requirements-specification.md:121
+REALITY: numbers finding effort figures are [estimated]; 24,000 cells per location [measured: FR-TA-068d limits] docs/requirements/04-software-requirements-specification.md:130
+REALITY: deferred-asks pass seat suggestion from the plan stays unscheduled docs/requirements/04-software-requirements-specification.md:137
+REALITY: pr-count pass default one PR per wave; no code yet docs/requirements/14-build-plan.md:41
+
+### Suppressed findings
+
+None.
+
+## Design Review 4: pack v0.5 screens (2026-11-11)
+
+Target: the v0.5 screens (pack C15 to C19 after CEO review 4 and eng review 6). Text-only: the mockup generator is not set up on this machine (no OpenAI key), and no DESIGN.md exists yet (planned for build week 1). Outside design voices: declined by the owner (D2). Focus: all 7 passes (D1).
+
+Initial rating: 4/10. The pack states behaviour and some exact wording, but no new screen had a layout, most had no loading, empty or error state, and phone behaviour was stated only for the seat picker.
+
+### Decisions (each approved individually on 2026-11-11)
+
+**DR4-1A Seat cell (FR-BA-013a, FR-TA-068i; D3).** A seat's colour shows only its state. The seat type shows as thick partition edges (none, 1 side, 2 sides, 3 sides) with the label. No type colour on the customer map; price shows in the type chips and on tap, not on the seat. The type's colour is used in the Tenant Admin only.
+
+**DR4-2A Seat picker layout (FR-BA-013a; D4).** Top to bottom on phones: floor tabs with free counts; one scrollable row of type chips (partition shape, name, price); the map; the sticky bar. A chip is the legend, the highlighter and the type chooser: tapping it highlights that type's seats, dims the rest, and the bar reads "Continue with any Cubicle · ₹650". With several types and no chip chosen the bar reads "Pick a seat or a seat type". One seat type: no chip row.
+
+```
+┌──────────────────────────────┐
+│ Choose your seat             │
+│ [Ground · 15 free][1st · 9]  │  floor tabs
+│ (▢ Open ₹400)(▙ Cubicle ₹650)│  type chips: legend + filter + chooser
+│ ┌──────────────────────────┐ │
+│ │        drawn map         │ │  state colour, partition edges, label
+│ └──────────────────────────┘ │
+│ [Continue with any Cubicle]  │  sticky bar states what is booked and the price
+└──────────────────────────────┘
+```
+
+**DR4-3A Screen states (D5).** Required states for the v0.5 screens:
+
+| Screen | Loading | Empty | Error | Success | Partial |
+|---|---|---|---|---|---|
+| Floors list | Skeleton rows | "Add your first floor" with the floor counter and an Upload plan button | "Couldn't load floors · Try again" | Floor row shows plan thumbnail and map status | A floor with no plan offers Upload plan or Use a template |
+| Plan upload | Progress bar with "Preparing your plan…" | Drop zone naming the accepted files | "We couldn't read this file. Try a JPG or PNG." | Plan appears behind the grid; line-up controls open | "Resume upload" after a dropped connection |
+| Seat types and prices | Skeleton table | "Standard" type listed, with "Add a seat type" | Inline per field ("Enter a price") and a save retry | "Saved" in the header | A type with no price shows "Uses product price" |
+| Amenities | Skeleton list | Starter list, all off, with "Switch on what you offer" | "Couldn't save · Retry" | Shown in the booking app within a minute | None |
+| Seat picker, floor tabs | Skeleton map | "No free seats on this floor · 1st floor has 9" as a link | "Couldn't load seats · Try again" | Seat picked, bar updates | Unpublished floors hidden |
+| Renew | Button spinner | Renewals off: no Renew button | "Cabin 2 is booked for December · See other cabins" | New confirmation | "Renewal not finished · You have until 28 Nov" |
+| Check-in (staff) | "Checking…" | Not applicable | Full-screen red with the reason | Full-screen green with name, seat and time | "No connection · Check in when back online" |
+| Offer code (Billing) | Button spinner | Code field with one line of help | Reason under the field | Offer line with months left and message credit | Offer ending soon: date and estimated first invoice |
+
+**DR4-4A Renew-by date (FR-BA-039; D6).** While a renewal hold is open, the booking row, booking detail and desk pass show "Renew by 28 Nov to keep Cabin 2" with a Renew button; on the last day "Last day to keep Cabin 2"; after the deadline, while the unit is free, "Cabin 2 is now open to everyone · Book again". App only; no extra paid message.
+
+**DR4-5A Plan line-up (FR-TA-068h; D7).** Upload works on any device. The line-up step (move, scale, cell size) is offered at 768 pixels and above. On a phone: "Line up your plan on a tablet or computer" with a link to send to yourself. Once lined up, the plan is a fixed backdrop on phones and painting keeps its gestures (DR3-11A).
+
+**DR4-6A Check-in screen (FR-TA-096a; D8).** Today → Check in opens the camera with "Type code" beneath. Type code: six large digit boxes, number keypad, submits on the sixth digit. Result fills the screen, green or red, with an icon and words. "Next customer" returns to the camera. 44-pixel controls. Owners and Managers see "Check in anyway" on a refusal.
+
+**DR4-7A Plan picture (13 OQ44; D9).** Customers see the drawn map only. The uploaded picture is never shown to customers.
+
+Carried forward without a question: the list view reads each seat's type and price (same choice as the map, NFR-A11Y-10); partition edges and state icons meet the non-text contrast rule already in the pack; the price table sits on the product's pricing screen with one row per seat type (FR-TA-068j); admin setup screens other than the seat builder stay desktop and tablet (26A).
+
+### Passes
+
+- Pass 1 (Information architecture): 3/10 → 9/10 after DR4-1A and DR4-2A. Remaining: tablet layout of the price table, left to the designer.
+- Pass 2 (Interaction states): 3/10 → 9/10 after DR4-3A. Remaining: the wording is unreviewed by a designer or a real owner.
+- Pass 3 (Journey): 5/10 → 9/10 after DR4-4A.
+
+```
+STEP | USER DOES                              | USER FEELS                 | PLAN SPECIFIES
+1    | Owner uploads a floor plan             | "Will this be hard?"       | DR4-3A upload states; DR4-5A line-up on a larger screen
+2    | Paints seats, sets types and prices    | control                    | FR-TA-068i, FR-TA-068j; autosave DR3-6A
+3    | Customer opens the seat picker         | choice, price clarity      | DR4-2A chips; DR4-1A one meaning per colour
+4    | Customer arrives, staff validate       | being expected             | DR4-6A full-screen result
+5    | Booking nears its end                  | "Don't lose my cabin"      | DR4-4A Renew-by line in three places
+6    | Customer renews                        | relief                     | FR-BA-038 same unit while the hold is open
+7    | First tenant enters the offer code     | welcomed                   | FR-TA-183 offer line; DR4-3A states
+```
+
+- Pass 4 (AI slop risk): 8/10 → 8/10. App UI, utility wording, no card stacks (32A), amenities as one row of labelled icons. No hard rejection applies. Not higher because visual treatment cannot be judged without DESIGN.md.
+- Pass 5 (Design system): 3/10 → 3/10. No DESIGN.md exists. Deferred by the owner's earlier decision that this pass waits for DESIGN.md in Sprint 0 (Design Review 3). New tokens v0.5 needs: partition edge weight and colour, floor tab, type chip, check-in result green and red.
+- Pass 6 (Responsive and accessibility): 4/10 → 8/10 after DR4-5A and DR4-6A. Remaining: floor tabs and type chips must be keyboard and screen-reader operable (tab list and radio group), to be specified with DESIGN.md.
+- Pass 7 (Unresolved decisions): 1 resolved (DR4-7A), 0 deferred in this pass.
+
+### NOT in scope
+
+- Visual tokens for the new components: wait for DESIGN.md (Sprint 0), by the earlier owner decision.
+- Phone layouts for Floors list, Seat types and prices, Amenities and Offer codes: these are admin setup screens, desktop and tablet by 26A.
+- Mockups: the generator is not set up on this machine.
+
+### What already exists
+
+Seat state tokens with icons (DR3-10A), seat picker with sticky bar and list view (DR3-4A, DR3-12A), builder phone model (DR3-11A), publish check sheet (DR3-5A), autosave states (DR3-6A), admin-on-phones rule (26A), no card stacks (32A), checkout order (1A, 2A).
+
+### Implementation Tasks (Design Review 4)
+
+- [ ] **T1 (P1, human: ~2 days / CC: ~2h)** — booking-app — Build the seat picker to DR4-1A and DR4-2A
+  - Surfaced by: Pass 1 — overloaded seat cell; no order for floors, types and prices
+  - Files: to be determined (web/apps/booking-app)
+  - Verify: at 390 pixels, a two-type product shows tabs, chips, map and bar; tapping a chip changes the bar to "Continue with any <type> · <price>"
+- [ ] **T2 (P1, human: ~2 days / CC: ~2h)** — all v0.5 screens — Implement the DR4-3A state table
+  - Surfaced by: Pass 2 — missing loading, empty, error and partial states
+  - Files: to be determined
+  - Verify: each row of the table has a Playwright case for its empty and error state
+- [ ] **T3 (P1, human: ~1 day / CC: ~1h)** — booking-app — Show the Renew-by line on the booking row, detail and pass (DR4-4A)
+  - Surfaced by: Pass 3 — the deadline was visible only in a message
+  - Files: to be determined
+  - Verify: fixed-clock test shows the three wordings before, on and after the deadline
+- [ ] **T4 (P1, human: ~1 day / CC: ~1h)** — tenant-admin — Gate the line-up step at 768 pixels (DR4-5A) and build the check-in screen (DR4-6A)
+  - Surfaced by: Pass 6 — gesture conflict on phones; no check-in screen design
+  - Files: to be determined (web/apps/tenant-admin)
+  - Verify: at 390 pixels the line-up step shows the larger-screen message; a typed 6-digit code submits on the sixth digit and shows a full-screen result
+- [ ] **T5 (P2, human: ~0.5 day / CC: n/a)** — DESIGN.md — Add tokens for partition edges, floor tabs, type chips and check-in results when DESIGN.md is written
+  - Surfaced by: Pass 5 — no design system yet
+  - Files: DESIGN.md (to be created in Sprint 0)
+  - Verify: each new component cites a token
+
+### Completion Summary (Design Review 4)
+
+```
++====================================================================+
+|         DESIGN PLAN REVIEW — COMPLETION SUMMARY                    |
++====================================================================+
+| System Audit         | No DESIGN.md; 8 new or changed screens      |
+| Step 0               | 4/10; all 7 passes (D1)                     |
+| Pass 1  (Info Arch)  | 3/10 → 9/10 after fixes                     |
+| Pass 2  (States)     | 3/10 → 9/10 after fixes                     |
+| Pass 3  (Journey)    | 5/10 → 9/10 after fixes                     |
+| Pass 4  (AI Slop)    | 8/10 → 8/10 after fixes                     |
+| Pass 5  (Design Sys) | 3/10 → 3/10 (waits for DESIGN.md)           |
+| Pass 6  (Responsive) | 4/10 → 8/10 after fixes                     |
+| Pass 7  (Decisions)  | 1 resolved, 0 deferred                      |
++--------------------------------------------------------------------+
+| NOT in scope         | written (3 items)                           |
+| What already exists  | written                                     |
+| TODOS.md updates     | 0 items proposed                            |
+| Approved Mockups     | 0 generated, 0 approved                     |
+| Decisions made       | 7 added to plan                             |
+| Decisions deferred   | 1 (Pass 5, earlier owner decision)          |
+| Overall design score | 3/10 → 3/10 (lowest pass; five of six at 8+)|
++====================================================================+
+```
+
+Pass 5 holds the overall score at 3/10 until DESIGN.md exists. Every other pass is 8 or higher.
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
-| CEO Review | `/plan-ceo-review` | Scope & strategy | 3 | CLEAR | mode: SCOPE_REDUCTION, 0 critical gaps (review 3 of revision 2) |
-| Outside Review | Codex (`/plan-eng-review`, `/plan-ceo-review`, `/plan-design-review` outside voices) | Independent 2nd opinion | 3 logged (earlier runs recorded in this document) | unavailable | CLI not installed; design review 3 ran a native Claude subagent (not outside coverage) |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 7 | ISSUES OPEN | eng review of the v0.4 diff and its re-review after Design Review 3 (2026-11-05): 6 issues, 0 critical gaps (TenantStateHistory, one capacity source per Seat choice mode, SeatMap single table; TrialEnded 30-day grace, publish fingerprint, no reuse of booked labels; tasks T1–T3, RT1–RT4; reports in ~/.gstack/projects/mathsyagiri-scrimpify-Cowos/) |
-| Design Review | `/plan-design-review` | UI/UX gaps | 3 | ISSUES OPEN | score: 3/10 → 6/10, 16 decisions (Design Review 3: plan screens, pricing table, seat builder and picker; Pass 5 waits for DESIGN.md in Sprint 0) |
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 4 | CLEAR | mode: HOLD_SCOPE, 0 critical gaps (review 4, pack v0.5: renewal hold, free tenants without a payment method, message credit) |
+| Outside Review | Codex (`/plan-ceo-review`, `/plan-eng-review` outside voices) | Independent 2nd opinion | 5 logged (earlier runs recorded in this document) | unavailable | CLI not installed; no completed external review. Design outside voices for Design Review 4: declined by the owner |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 8 | ISSUES OPEN | 20 issues, 0 critical gaps (eng review 6 of pack v0.5: no new jobs, type first for any seat, offer codes on Billing only, PDF plans in an isolated worker; tasks T1–T6; all findings resolved or mapped to tasks) |
+| Design Review | `/plan-design-review` | UI/UX gaps | 4 | ISSUES OPEN | score: 3/10 → 3/10, 7 decisions (Design Review 4 of the v0.5 screens: DR4-1A to DR4-7A; five of six passes at 8+; Pass 5 waits for DESIGN.md in Sprint 0) |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-- **OUTSIDE COVERAGE:** codex, plan-review phase (eng, CEO), unavailable; codex, design phase (design review 3), unavailable: CLI not installed. A native Claude design subagent completed (single-model; not outside coverage).
-- **VERDICT:** CEO CLEARED. Eng review: findings resolved and mapped to tasks, status ISSUES OPEN until built (eng review required). The eng re-review after Design Review 3 checked its interaction specs (TrialEnded grace, publish fingerprint, label reuse).
+- **OUTSIDE COVERAGE:** codex, plan-review phase (CEO review 4, eng review 6), unavailable: CLI not installed. Design phase (Design Review 4): skipped at the owner's choice; no outside or native design voice ran.
+- **VERDICT:** CEO CLEARED. Eng review 6 and Design Review 4 cover v0.5: findings resolved and mapped to tasks, status ISSUES OPEN until built and until DESIGN.md exists (eng review required).
 
 NO UNRESOLVED DECISIONS

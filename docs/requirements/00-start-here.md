@@ -275,7 +275,7 @@ Affects: 04 SRS (FR-TA-068g to FR-TA-068l, FR-BA-013a), 05 stories (US-4.10, US-
 
 **What the pack now says:** cancellation and reschedule were already in the pack at launch (FR-BA-031, FR-BA-032, FR-TA-080, FR-TA-094, FR-TA-095) and are unchanged. New in v0.5:
 - **Ending alerts** for every duration, on timings the tenant can change (defaults: monthly 7 and 2 days before the end, weekly 2 days, daily 3 hours, hourly 15 minutes) (FR-BA-039, FR-TA-084).
-- **Renew or extend** from the alert or the booking detail: the same seat or unit when it is free, at the current price, paid through the normal checkout (FR-BA-038). Staff can do the same for a customer (FR-TA-095a).
+- **Renew or extend** from the alert or the booking detail: the same seat or unit when it is free, at the current price, paid through the normal checkout (FR-BA-038). For weekly and monthly bookings the seat or unit is held for the current customer until a deadline the tenant sets, default 2 days before the end (decided in CEO review 4). Staff can do the same for a customer (FR-TA-095a).
 
 Not the same as memberships (Phase 2, FR-TA-151 to FR-TA-154), which bill a plan automatically each cycle. A renewal here is a new booking the customer chooses to make.
 
@@ -304,9 +304,9 @@ Affects: 04 SRS (FR-TA-083, FR-TA-096a, FR-BA-046), 05 stories (US-8.7), 09 data
 
 **Request (2026-11-11):** for the first three or five tenants Cowos is free; Cowos gives them promo codes.
 
-**What the pack now says:** SSPL creates offer codes in the Super Admin (discount %, months, number of tenants, last date to redeem) and a tenant enters one at sign-up or on the Billing page (FR-SA-059, FR-TA-183). A 100% code makes the server invoices ₹0 for the covered months. These tenants use the same sign-up, plans and tenant states as everyone else, so the pilot machinery removed in v0.3 does not come back.
+**What the pack now says:** SSPL creates offer codes in the Super Admin (discount %, months, number of tenants, last date to redeem) and a tenant enters one on the Billing page after signing in; there is no code field on the public sign-up form (FR-SA-059, FR-TA-183; eng review 6). A 100% code makes the server invoices ₹0 for the covered months. These tenants use the same sign-up, plans and tenant states as everyone else, so the pilot machinery removed in v0.3 does not come back.
 
-This changes the v0.3 statement "no free pilot programme": there is still no separate pilot programme, but SSPL can now waive its charges for chosen tenants with a code. It does not change "0% commission" (C1) or the tenant's own promo codes for its customers (FR-TA-150). The free duration is set on each code (decided 2026-11-11). The number of tenants and whether messages are covered are not decided (13 OQ48).
+This changes the v0.3 statement "no free pilot programme": there is still no separate pilot programme, but SSPL can now waive its charges for chosen tenants with a code. It does not change "0% commission" (C1) or the tenant's own promo codes for its customers (FR-TA-150). The free duration is set on each code (decided 2026-11-11). Decided in CEO review 4: a tenant on a 100% code needs no payment method until the free period ends, and a code can carry a monthly message credit so the offer is free for messages too. The number of tenants and the credit amount are values SSPL enters on the code (13 OQ48).
 
 Affects: 04 SRS (FR-SA-059, FR-TA-183), 05 stories (US-10.9), 09 data model, 13 (OQ48), 14 build plan weeks 17–18.
 
