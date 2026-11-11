@@ -19,6 +19,7 @@
 | E11 | Existing-website integration | P1 / P2 |
 | E12 | Privacy and data rights | P1 |
 | E13 | Memberships and credits | P2 |
+| E14 | Conversational assistants with form prefill | After launch (13 OQ37) |
 
 ---
 
@@ -393,3 +394,33 @@ As a tenant owner, I want a "Dedicated Desk ₹7,000/month incl. 5 meeting room 
 **US-13.2 Pay with credits** (FR-BA-022)
 As a member, I want to use my included hours for meeting rooms so that I don't pay twice.
 - **Given** I have 3 credit hours, **when** I book 4 hours, **then** 3 hours are paid by credits and I pay for 1 hour online, and the invoice shows the credit line at ₹0 with the paid hour taxed normally.
+
+---
+
+## E14 · Conversational assistants with form prefill (after launch)
+
+Added 2026-11-11. Not launch scope and not yet reviewed (04 §9, 13 OQ37).
+
+**US-14.1 Book through chat, confirm on the form** (FR-AI-003, FR-AI-004, FR-AI-005, FR-AI-006, FR-AI-007, FR-AI-011)
+As a customer, I want to tell the booking app what I need in my own words so that the booking form is filled in for me.
+- **Given** I'm in a tenant's booking app, **when** I type "I want to book a desk for next Monday" and answer "Hyderabad branch, full day", **then** the assistant reads back that Monday's date, says it is opening the booking form, and the form opens with Location = Hyderabad, that date and Duration = Full day filled in.
+- **Given** the form opened prefilled, **when** I change the date and submit, **then** the booking uses the date I changed it to, and sign-in, the hold and payment work as they do without the assistant.
+- **Given** I close the form without submitting, **when** I look at my bookings, **then** nothing was booked, held or charged.
+- **Given** the time I asked for is no longer free, **when** the form opens, **then** the form shows its normal "not available" message on that field and I can pick another time.
+
+**US-14.2 Start tenant sign-up through chat** (FR-AI-004, FR-AI-010, FR-AI-014)
+As a coworking owner, I want to start signing up by chatting on the Cowos site so that I don't have to find the right form.
+- **Given** I'm on the Cowos marketing site, **when** I type "I want to onboard as a tenant" and give my name, work email, mobile, business name and city, **then** the sign-up form opens with those fields filled in and I set my password and verify the OTPs on the form.
+- **Given** I type a password or an OTP into the chat, **when** the assistant replies, **then** it tells me to enter it on the form, and the value is not stored or prefilled.
+
+**US-14.3 Use the form without the assistant** (FR-AI-001, FR-AI-009, FR-AI-016)
+As any user, I want the forms to work exactly as before so that the chat is my choice.
+- **Given** I never open the chat, **when** I use any form, **then** it behaves as it does without the assistant.
+- **Given** I have answered some of the assistant's questions, **when** I choose to go to the form, **then** it opens with what I gave so far and I fill in the rest.
+- **Given** the assistant is unavailable, **when** I open the chat, **then** I see a short message with a link to the form, and the form works.
+
+**US-14.4 Each app's assistant stays in its own app** (FR-AI-002, FR-AI-012, FR-AI-015)
+As a tenant owner, I want the Tenant Admin assistant to help only with my admin forms so that it never touches what it shouldn't.
+- **Given** I'm an Owner in the Tenant Admin, **when** I type "create a promo code for 10% off day passes in December", **then** the promo code form opens with the discount, product and dates filled in, and no code exists until I submit.
+- **Given** I'm a customer in a tenant's booking app, **when** I ask the assistant to sign me up as a tenant, **then** it says it can help with bookings and tours at this space only.
+- **Given** I'm a staff user whose role can't create promo codes, **when** I ask the Tenant Admin assistant for one, **then** it tells me my role doesn't allow it and opens nothing.

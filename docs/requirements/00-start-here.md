@@ -243,6 +243,14 @@ Why a grid and not a free canvas or floor photo: a grid works on a phone, an own
 
 Affects: 03 BRD §5, 04 SRS (FR-TA-068, FR-TA-068a–e, FR-TA-063, FR-TA-091, FR-BA-013, FR-BA-017, FR-BA-019), 05 stories (US-4.6–US-4.8), 06 flows, 07 NFR (accessibility of the map), 09 data model (SeatMap, seat fields on ProductUnit), 10 API, 12 release plan, 13 OQ36.
 
+### C14. Conversational assistants: chat that fills the form, one per app (after launch; added 2026-11-11)
+
+**Request (product owner, 2026-11-11):** every form should have two ways in. The form stays as it is. A chat assistant collects the same details in conversation, then opens the real form with them filled in; the person reviews, edits and submits there. Each app has its own assistant for its own forms (the marketing site for sign-up and onboarding, the booking app for bookings, and so on), not one shared assistant.
+
+**Status:** recorded as a requirement to be introduced after launch, on a date not yet set (13 OQ37). It is not in the week-20 build plan (14) and has not been reviewed. Who pays for the AI usage (13 OQ38), the exact forms per app (OQ39) and the privacy questions (OQ40, OQ41) are open.
+
+Affects: 04 SRS §9 (FR-AI-001 to FR-AI-019), 05 stories (E14), 12 release plan §2, 13 (R32, R33, OQ37–OQ41).
+
 ---
 
 ## 3. Decisions you need to make

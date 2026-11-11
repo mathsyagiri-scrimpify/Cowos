@@ -41,6 +41,8 @@ Likelihood (L) and Impact (I): H / M / L.
 | R29 | **Tenants dispute metered bills** they don't understand or don't expect | M | M | Billing page shows units per meter, the slab breakdown, a daily month-to-date estimate and the daily usage behind each invoice; WAF-blocked requests and SSPL monitoring are excluded (Pricing Rules #3, #5); rate card published on the pricing page | Product / Finance |
 | R30 | **Bot traffic inflates request units**: crawlers and scrapers that pass WAF count as billable requests | M | M | WAF-blocked requests are excluded (Pricing Rule #3); whether known bots that pass WAF are billed is open (OQ22); daily usage detail lets a tenant see spikes | Engineering / Product |
 | R31 | **Seat map builder is harder to use than planned**: owners give up half way, or draw maps that don't match real seats, so customers pick seats that don't exist | M | H | Templates first, auto-labelling, "Preview as customer" before publish, validation on save (C13); test the builder with 3 early tenant owners in M3b before launch; SSPL can build a map under an Owner-approved support grant (Rule #9); "Seat choice: Off" keeps a plain pool for owners who don't want a map | Product |
+| R32 | **The assistant fills a form with a wrong value** (a misread date, the wrong location) and the person submits without noticing (04 §9, after launch) | M | M | The assistant never submits: the person reviews and submits on the form (FR-AI-005); relative dates are read back as calendar dates (FR-AI-007); only real options are offered and the form's own validation, price and availability apply (FR-AI-008) | Product |
+| R33 | **AI usage cost** of the assistants is unbudgeted and, in a tenant's booking app, grows with that tenant's traffic (04 §9, after launch) | M | M | Decide who pays before the build (OQ38); Owner on/off switch (FR-AI-019); per-tenant rate limits | Finance / Product |
 
 ## 2. Open questions
 
@@ -82,6 +84,11 @@ Likelihood (L) and Impact (I): H / M / L.
 | OQ34 | Do Super Admin and support-grant requests count as the tenant's request units? | Fair bills | Resolved 2026-11-04 (eng re-review 3, R22): only customer-facing tenant hosts are metered; admin and support traffic is not |
 | OQ35 | What are the Fixed plan fee and its monthly message allowances per channel (Pricing Rule #12)? | Pricing page, sample bills, rating, wallet | Not decided. The product owner sets them on the rate card before launch (by week 12 of the build plan), together with the slab prices (OQ21) |
 | OQ36 | Are 10 seat maps per location and 40 × 60 cells per map enough (Rule #13)? | Seat map builder, performance budget | Default used in this pack; confirm with the largest beachhead spaces in M3b |
+| OQ37 | When are the conversational assistants (04 §9) introduced? | Release plan, build plan | Not decided. Product owner, 2026-11-11: after launch, "later". This pack lists them under Phase 2 as a placeholder; they are not in the week-20 build plan (14) |
+| OQ38 | Who pays for the AI usage of a tenant's booking app assistant and Tenant Admin assistant: SSPL, or the tenant (a new meter on the Usage plan and an allowance on the Fixed plan)? | Rate card, Pricing Rules #3 and #12, the Owner's on/off switch (FR-AI-019) | Not decided. A new meter would change the decided pricing rules, so it needs the product owner |
+| OQ39 | Is the per-app split of forms right (FR-AI-010 to FR-AI-013): marketing site, booking app and Tenant Admin get an assistant; tenant website and Super Admin do not? | Scope of the assistants | Proposed by this pack; not confirmed |
+| OQ40 | Which AI model provider is used, and may customers' personal data (name, phone, booking details) typed into the chat be sent to it under the DPDP Act? Where is it processed? | Architecture, DPA, privacy notice | Not decided; needs counsel |
+| OQ41 | Are chat messages stored, for how long, and can the tenant or SSPL read them? | DPDP compliance, FR-AI-018, support | Not decided; needs counsel |
 
 ## 3. Decision log
 

@@ -15,6 +15,7 @@
 | FR-EM | Embedding / existing-website integration |
 | FR-SA | Cowos Super Admin Portal |
 | FR-PL | Platform services (cross-cutting, no UI of their own) |
+| FR-AI | Conversational assistants with form prefill (after launch, §9) |
 
 **Priority (MoSCoW, relative to the MVP release):**
 - **M** Must: MVP cannot launch without it.
@@ -381,3 +382,42 @@
 | FR-PL-080 | Calendar: generate `.ics` per booking; Google Calendar add link. | M | P1 |
 | FR-PL-081 | One-way push of meeting-room bookings to a tenant's Google/Outlook resource calendar. | C | P3 |
 | FR-PL-090 | Search-engine-friendly redirects and canonical handling across platform and custom domains. | M | P1 |
+
+---
+
+## 9. FR-AI · Conversational assistants with form prefill (after launch)
+
+Added 2026-11-11 at the product owner's request. It is **not launch scope**: the product owner will introduce it after launch, on a date not yet set (13 OQ37). It was added after revision 2 and has not been through the CEO, design or engineering reviews. The split of forms per app (FR-AI-010 to FR-AI-013) and the items marked "proposed" are this pack's proposals, not product owner decisions.
+
+**Summary:** every form keeps working as it does today. Each app also gets its own chat assistant that asks for the same details in conversation, then opens the real form with those details filled in. The person reviews, edits and submits on the form. The assistant never saves anything itself.
+
+**Example:** in a tenant's booking app, a customer types "I want to book a desk for next Monday". The assistant asks which location and for how long. The customer answers "Hyderabad branch, full day". The assistant replies "Taking you to the booking form with these details filled in. Please review and submit" and opens the booking form with Location = Hyderabad, Date = that Monday's date and Duration = Full day already filled.
+
+### 9.1 Rules for every assistant
+
+| ID | Requirement | Pri | Phase |
+|----|-------------|:---:|:---:|
+| FR-AI-001 | Both ways to enter data shall exist side by side. Every form the assistant supports stays available and fully usable without the assistant. The assistant is an addition, never a replacement, and no form may require it. | C | P2 |
+| FR-AI-002 | Each app shall have its own assistant, limited to that app's forms (FR-AI-010 to FR-AI-012). There is no single assistant shared across apps. Asked for something outside its app, the assistant says what it can help with and, where another Cowos app handles the request, gives a link to it (the link is proposed). | C | P2 |
+| FR-AI-003 | The assistant shall work out what the person wants to do from their message (for example "I want to onboard as a tenant", "Book a meeting room for tomorrow"), choose the matching form, and ask only for that form's required details that it does not already have, a few at a time. If it cannot tell which form is meant, it asks. | C | P2 |
+| FR-AI-004 | When the required details are collected, the assistant shall tell the person it is opening the form, then open the real form page for that workflow with every collected value filled in. The person shall not have to type again anything they already gave in the chat. | C | P2 |
+| FR-AI-005 | The assistant shall never create, change or submit a record. It makes no booking, hold, payment, tenant, product, promo code or lead. Saving happens only when the person submits the form, with the form's normal validation, permissions and confirmation. | C | P2 |
+| FR-AI-006 | Every prefilled field shall stay editable on the form, exactly as if the person had typed it. | C | P2 |
+| FR-AI-007 | Chat answers shall map to the correct form fields. Each supported form has one field definition (field names, types, allowed values, which are required) that both the form and the assistant use, so the two cannot drift apart. The assistant converts answers to the form's format before handoff: relative dates ("next Monday", "tomorrow") become a calendar date in the tenant's timezone and are read back to the person; choices (location, product, duration) become one of the form's real options. | C | P2 |
+| FR-AI-008 | The assistant shall offer only real options from live data (the tenant's locations, products, durations, opening hours). It shall not state a price or promise availability on its own authority: the form shows the price and availability, and the form's answer wins. If a prefilled value is no longer valid when the form opens (for example the time is taken), the form shows its normal error on that field. | C | P2 |
+| FR-AI-009 | The person shall be able to leave the chat for the form at any point. The form opens with whatever was collected so far, and the rest is filled in by hand. | C | P2 |
+| FR-AI-014 | The assistant shall never ask for or accept passwords, sign-in codes (OTPs), card or UPI details, bank details or payment gateway keys. Those are entered only on the form or the payment page. If a person types one into the chat, it is not stored or passed on, and the assistant says so. | C | P2 |
+| FR-AI-015 | Tenant isolation applies to the assistant as to every other request (FR-PL-001, FR-PL-002): an assistant on a tenant's host reads only that tenant's data, and an assistant in an admin portal reads only what the signed-in user's role may see. | C | P2 |
+| FR-AI-016 | If the assistant is unavailable or slow, the app shall keep working. The chat shows a short message that points to the form, and no form is blocked. | C | P2 |
+| FR-AI-017 | The assistant shall work in English, like the rest of the product in Phase 1 (00 Q14). | C | P2 |
+| FR-AI-018 | The chat shall show a notice that the person is talking to an automated assistant and how chat messages are used and kept. What is kept and for how long is open (13 OQ41). | C | P2 |
+
+### 9.2 Assistant per app (proposed split)
+
+| ID | Requirement | Pri | Phase |
+|----|-------------|:---:|:---:|
+| FR-AI-010 | **Marketing site assistant** (`cowos.in`): tenant sign-up (FR-MW-005: name, work email, mobile, business name, city, slug) and "Book a demo" (FR-MW-008). The password and the email and mobile OTP checks stay on the sign-up form (FR-AI-014). | C | P2 |
+| FR-AI-011 | **Booking app assistant** (each tenant's booking app): Instant Book, Request to Book, and Enquire / Book a Tour (FR-BA §5.2). It collects location, product, date, start time or duration and number of people. The seat is chosen on the seat map on the form (FR-BA-013); the prefill uses "Any available seat" unless the person named one. Sign-in, the hold and payment happen on the form as today. The assistant carries the tenant's name and theme and never shows Cowos branding (white label, 00 Q9, Q16). | C | P2 |
+| FR-AI-012 | **Tenant Admin assistant** (`app.cowos.in`): the onboarding wizard steps (FR-TA-001), adding a product and its prices (§3.5), creating a promo code (FR-TA-150), recording an offline payment (§3.9) and making a staff booking (§3.7). It offers only the forms the signed-in user's role may use (02). | C | P2 |
+| FR-AI-013 | The tenant website and the Super Admin Portal have no assistant of their own. The tenant website's "Book now" and "Book a tour" buttons already lead to the booking app; the Super Admin Portal is for SSPL staff only. | C | P2 |
+| FR-AI-019 | A tenant Owner shall be able to turn the booking app assistant on or off for their space (proposed; depends on who pays for it, 13 OQ38). | C | P2 |
