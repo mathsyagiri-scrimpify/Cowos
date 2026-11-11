@@ -49,6 +49,8 @@ The other decisions in `docs/requirements/13-risks-open-questions-decisions.md` 
 
 Open questions OQ1–OQ15 in the same file are also unanswered. The pack uses the default assumptions listed there.
 
+**Pack v0.5 (2026-11-11):** five requested changes were added to the pack as C15 to C19 in `00-start-here.md`: (1) floors, an uploaded floor plan to trace over, seat types and prices by seat type or unit; (2) renew or extend and "booking ending" alerts (cancel and reschedule were already there); (3) a tenant-managed amenity list; (4) check-in by QR or 6-digit code inside a window the tenant sets; (5) SSPL offer codes that make Cowos free for the first 3 to 5 tenants. None has been through a review, the design doc is only annotated, and the build plan has not been re-estimated (13 R35, OQ42 to OQ49).
+
 ## 4. Work in progress: strategy review (stopped mid-way)
 
 The previous session started `/plan-ceo-review` (gstack). Since there was no design doc, it ran `/office-hours` inline first, in **startup mode** (goal: intrapreneurship at SSPL). It stopped at **Phase 3 (premise challenge)** when the work was handed over.

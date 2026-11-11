@@ -1,6 +1,6 @@
 # 03 · Business Requirements Document (BRD)
 
-> Cowos requirements pack · v0.4 draft
+> Cowos requirements pack · v0.5 draft
 
 ## 1. Purpose
 

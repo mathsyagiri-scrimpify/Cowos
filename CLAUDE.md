@@ -5,7 +5,7 @@ SSPL's product: a white-label website + booking app platform for independent cow
 ## Start here
 - `docs/HANDOFF.md`: current status, what is decided vs open, and where the strategy review stopped. Read first.
 - `docs/original-brief.md`: the product owner's original brief and later clarifications.
-- `docs/requirements/`: requirements pack v0.4 (start with `00-start-here.md`).
+- `docs/requirements/`: requirements pack v0.5 (start with `00-start-here.md`).
 
 ## Ground rules from the product owner
 - "0% commission" means Cowos takes no share of a tenant's booking revenue. What tenants charge their customers (prices, promo codes, fees) is the tenant's decision.
@@ -14,7 +14,8 @@ SSPL's product: a white-label website + booking app platform for independent cow
 - Each tenant chooses how it pays SSPL (D1, revision 2 on 2026-11-04, Pricing Rule #12): a **Fixed plan** (one flat monthly fee set by SSPL; server usage unlimited and not metered for billing; messages included up to a monthly fair-use allowance per channel, then paid from the wallet) or a **Usage plan** (no fee; server usage and notifications metered in slabs whose prices SSPL configures, like an electricity bill). Switching applies from the next 1st. Every feature on both plans, no commission, no free pilot programme. Hosting is one app server plus managed PostgreSQL (D2, decided 2026-11-04).
 - Owners build a grid seat map of their space (templates, paint desks/cabins/rooms) and customers pick a seat like a movie ticket, at launch (Pricing Rule #13 and "Seat maps (revision 2)" in the design doc).
 - The owner wants every app finished before selling to tenants, as fast as possible: build with a small team using Claude Code, following `docs/requirements/14-build-plan.md` (launch target week 20, estimated).
-- The pack is v0.4 (2026-11-04). Revision 2 has not been through the CEO, design or eng reviews yet.
+- The pack is v0.5 (2026-11-11). Revision 2 (v0.4) and the v0.5 additions have not been through the CEO, design or eng reviews yet.
+- v0.5 additions (2026-11-11, `00-start-here.md` C15 to C19), none reviewed and none scheduled in the build plan yet: tenants set floors and upload a floor plan per floor to trace the seat map over, define seat types (open, partition, cubicle) and price by seat type or unit; customers renew or extend and get "booking ending" alerts; tenants manage an amenity list; staff validate a booking by QR or 6-digit code inside a check-in window the tenant sets; SSPL gives the first 3 to 5 tenants a free period through offer codes (this is a discount code on the normal flow, not a separate pilot programme). Decided 2026-11-11: Cowos launches only when all the features are complete (all of v0.5 is launch scope; the week-20 target needs re-estimating), and the free duration is set on each offer code. Open details are OQ42 to OQ49 in pack 13.
 - The approved design doc is `docs/designs/cowos-platform-v1.md` (premises, pricing and billing rules, chosen approach).
 - Decisions D3–D16 in `docs/requirements/13-risks-open-questions-decisions.md` are still Proposed. Don't treat them as approved.
 

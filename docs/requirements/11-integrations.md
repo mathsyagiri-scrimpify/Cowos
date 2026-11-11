@@ -1,6 +1,6 @@
 # 11 · Integrations
 
-> Cowos requirements pack · v0.4 draft · Every external provider sits behind an internal interface (`IPaymentGateway`, `ISmsSender`, `IWhatsAppSender`, `IEmailSender`, `IGstVerifier`, `IGeoService`) so it can be swapped without touching domain code.
+> Cowos requirements pack · v0.5 draft · Every external provider sits behind an internal interface (`IPaymentGateway`, `ISmsSender`, `IWhatsAppSender`, `IEmailSender`, `IGstVerifier`, `IGeoService`) so it can be swapped without touching domain code.
 
 ## 1. Summary
 

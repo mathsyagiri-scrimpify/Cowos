@@ -1,6 +1,6 @@
 # 08 · High-Level Architecture
 
-> Cowos requirements pack · v0.4 draft · Stack: ASP.NET Core (.NET 10 LTS), React + TypeScript, PostgreSQL, AWS (ap-south-1 Mumbai primary)
+> Cowos requirements pack · v0.5 draft · Stack: ASP.NET Core (.NET 10 LTS), React + TypeScript, PostgreSQL, AWS (ap-south-1 Mumbai primary)
 
 ## 1. Architecture principles
 

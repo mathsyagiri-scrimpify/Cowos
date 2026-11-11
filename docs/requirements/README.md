@@ -1,6 +1,6 @@
 # Cowos Requirements Pack
 
-Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.4 (2026-11-04): tenants choose a Fixed plan (flat monthly fee, unlimited use, messages within a fair-use allowance) or a Usage plan (metered slabs) (Pricing Rule #12); grid seat maps with seat picking ship at launch (Rule #13); and [14-build-plan.md](14-build-plan.md) sets the build order and sprints for a small team using Claude Code, with a launch target of week 20 [estimated]. Before that, v0.3 (2026-11-04) was updated to the product owner's revision of the approved design doc `docs/designs/cowos-platform-v1.md`.
+Branded website + booking app platform for coworking spaces, by SSPL. Draft v0.5 (2026-11-11; v0.4 was 2026-11-04): tenants choose a Fixed plan (flat monthly fee, unlimited use, messages within a fair-use allowance) or a Usage plan (metered slabs) (Pricing Rule #12); grid seat maps with seat picking ship at launch (Rule #13); and [14-build-plan.md](14-build-plan.md) sets the build order and sprints for a small team using Claude Code, with a launch target of week 20 [estimated]. Before that, v0.3 (2026-11-04) was updated to the product owner's revision of the approved design doc `docs/designs/cowos-platform-v1.md`.
 
 New to this work? Read the [handoff notes](../HANDOFF.md) first for current status and next steps.
 

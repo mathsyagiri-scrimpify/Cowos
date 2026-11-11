@@ -1,6 +1,6 @@
 # 07 · Non-Functional Requirements
 
-> Cowos requirements pack · v0.4 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked.
+> Cowos requirements pack · v0.5 draft · IDs `NFR-<area>-<nn>`; all are MVP (Must, P1) unless marked.
 
 ## 1. Multi-tenancy and data isolation
 

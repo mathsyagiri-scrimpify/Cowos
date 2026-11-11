@@ -1,6 +1,6 @@
 # 10 · API Module List
 
-> Cowos requirements pack · v0.4 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked.
+> Cowos requirements pack · v0.5 draft · Modules and key endpoints only; full OpenAPI specs come during design. Endpoints are P1 unless marked.
 
 ## 1. Conventions
 

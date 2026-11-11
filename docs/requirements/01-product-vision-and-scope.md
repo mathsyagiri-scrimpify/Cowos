@@ -1,6 +1,6 @@
 # 01 · Product Vision & Scope
 
-> Cowos requirements pack · v0.4 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
+> Cowos requirements pack · v0.5 draft · Depends on decisions in [00-start-here.md](00-start-here.md)
 
 ## 1. Vision statement
 

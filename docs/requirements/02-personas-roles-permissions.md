@@ -1,6 +1,6 @@
 # 02 · Personas, Roles & Permissions
 
-> Cowos requirements pack · v0.4 draft
+> Cowos requirements pack · v0.5 draft
 
 ## 1. Personas
 

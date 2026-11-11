@@ -1,6 +1,6 @@
 # 13 · Risks, Open Questions & Decisions
 
-> Cowos requirements pack · v0.4 draft
+> Cowos requirements pack · v0.5 draft
 
 Note: other pack files cite engineering review decisions from `docs/designs/cowos-platform-v1.md` as "(R1)"–"(R20)". This file writes them "eng R1"–"eng R20" so they are not confused with the risks R1–R30 below. "Pricing Rule #n" refers to the Pricing and Billing Rules #1–#11 in the same design doc.
 
@@ -43,6 +43,9 @@ Likelihood (L) and Impact (I): H / M / L.
 | R31 | **Seat map builder is harder to use than planned**: owners give up half way, or draw maps that don't match real seats, so customers pick seats that don't exist | M | H | Templates first, auto-labelling, "Preview as customer" before publish, validation on save (C13); test the builder with 3 early tenant owners in M3b before launch; SSPL can build a map under an Owner-approved support grant (Rule #9); "Seat choice: Off" keeps a plain pool for owners who don't want a map | Product |
 | R32 | **The assistant fills a form with a wrong value** (a misread date, the wrong location) and the person submits without noticing (04 §9, after launch) | M | M | The assistant never submits: the person reviews and submits on the form (FR-AI-005); relative dates are read back as calendar dates (FR-AI-007); only real options are offered and the form's own validation, price and availability apply (FR-AI-008) | Product |
 | R33 | **AI usage cost** of the assistants is unbudgeted and, in a tenant's booking app, grows with that tenant's traffic (04 §9, after launch) | M | M | Decide who pays before the build (OQ38); Owner on/off switch (FR-AI-019); per-tenant rate limits | Finance / Product |
+| R34 | **Tracing over an uploaded plan is harder than expected** (v0.5, C15): plans arrive tilted, low quality or out of date, the grid doesn't line up, and owners give up or publish a map that doesn't match | M | H | Crop, rotate, cell size and line-up controls (FR-TA-068h); templates stay for owners with no usable plan; SSPL can build the map under a support grant (Rule #9); test with the first 3 to 5 tenants' real plans before launch; seat suggestions stay unscheduled until tested (OQ43) | Product |
+| R35 | **v0.5 adds launch scope with no re-estimate** (C15 to C19): the week-20 target in 14 was set before these were added | H | H | Re-plan 14 before the seat-map sprint (weeks 8–9); decide which v0.5 items are launch and which follow (OQ42); the production entry gate stays fixed (Pricing Rule #1) | PM |
+| R36 | **The check-in window turns away real customers** who arrive early, and front desks stop using validation (v0.5, C18) | M | M | The window is the tenant's setting, 0 to 120 minutes (FR-TA-083); the refusal shows when check-in opens; Owner or Manager override with a reason (FR-TA-096a) | Product |
 
 ## 2. Open questions
 
@@ -89,6 +92,14 @@ Likelihood (L) and Impact (I): H / M / L.
 | OQ39 | Is the per-app split of forms right (FR-AI-010 to FR-AI-013): marketing site, booking app and Tenant Admin get an assistant; tenant website and Super Admin do not? | Scope of the assistants | Proposed by this pack; not confirmed |
 | OQ40 | Which AI model provider is used, and may customers' personal data (name, phone, booking details) typed into the chat be sent to it under the DPDP Act? Where is it processed? | Architecture, DPA, privacy notice | Not decided; needs counsel |
 | OQ41 | Are chat messages stored, for how long, and can the tenant or SSPL read them? | DPDP compliance, FR-AI-018, support | Not decided; needs counsel |
+| OQ42 | Are all the v0.5 additions (00 §C15 to C19) launch scope, and what is the new launch week? | Build plan 14, release plan 12 | **Scope decided 2026-11-11:** Cowos launches only when all the features are complete, so every v0.5 addition is launch scope (P1). The launch week is still open: 14 has not been re-estimated and week 20 no longer holds until it is (R35) |
+| OQ43 | Should Cowos suggest seats from the uploaded plan (FR-TA-068l)? If so, when, and who pays for the AI usage? | Seat map builder, rate card | Not scheduled. Test on the first tenants' real plans first; cost question is the same as OQ38 |
+| OQ44 | Do customers see the uploaded plan picture behind the map in the booking app? | Seat picker (FR-BA-013a) | Default in this pack: no. Customers see the drawn map with the floor's outline; the picture is a builder aid |
+| OQ45 | When a product has several seat types, what does "Any available seat" do? | Seat picker, pricing | Default in this pack: the customer picks the seat type first, then gets any free seat of that type |
+| OQ46 | Is the seat or unit kept for the current customer until a renewal deadline (first refusal)? | Renewals (FR-BA-038, FR-TA-084), availability | Default in this pack: not kept; the alert says someone else can book it. Keeping it would block inventory the tenant could sell |
+| OQ47 | For bookings longer than a day (weekly, monthly), is check-in needed every day or only on the first day? | Check-in rules (FR-TA-083), no-show rule | Default in this pack: the window applies each day the customer comes in; a missed day on a weekly or monthly booking is not a no-show |
+| OQ48 | Launch offer (C19): is it 3 tenants or 5, for how many months, on which plan, are notification wallet charges covered, and must the tenant add a payment method during the free period? | FR-SA-059, FR-TA-183, tenant states (FR-PL-062), SSPL cost | **Partly decided 2026-11-11:** the free duration is set on each offer code (FR-SA-059), so there is no single fixed period. Still open: 3 tenants or 5, which plan, whether messages are covered, and the payment method. Default in this pack: up to 5 tenants, 100% off the plan fee and server usage, messages not covered |
+| OQ49 | What are the default "booking ending" alert timings, and can a customer switch the alerts off? | FR-TA-084, FR-BA-039, message cost to the tenant | Defaults in this pack: monthly 7 and 2 days, weekly 2 days, daily 3 hours, hourly 15 minutes before the end; the tenant can change them. Customer opt-out follows the notification preferences in FR-BA-040 |
 
 ## 3. Decision log
 

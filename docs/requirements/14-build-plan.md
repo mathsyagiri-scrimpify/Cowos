@@ -1,6 +1,6 @@
 # 14 · Build Plan: order, sprints and user stories
 
-> Cowos requirements pack · v0.4 draft · 2026-11-04 · For a small team using Claude Code. Week numbers are estimates: re-plan after sprint 3, when the real pace is known.
+> Cowos requirements pack · v0.5 draft · 2026-11-04 · For a small team using Claude Code. Week numbers are estimates: re-plan after sprint 3, when the real pace is known.
 
 The product owner wants every app finished before Cowos is sold to tenants, and as soon as possible. This plan builds all six apps with **4 developers who use Claude Code to write most of the code**, a part-time designer, and the product owner accepting work every week. **Launch target: week 20** [estimated]; launch tenants are told "launching week 20–24". **Checkpoint at the end of week 4:** the first paid booking must be demoed end to end; if not, re-plan from the measured pace and the owner chooses between moving the date and cutting from §6 (CEO review 3, R3-P1). With 3 developers, expect about week 24. The full-team plan in 12 §3 (week 28) stays as the comparison.
 
@@ -60,6 +60,8 @@ Stories are in `05-user-stories.md`; the FRs they cite are in `04`. "New" marks 
 | 15–16 | **Hardening** | none (launch gate, 12 §4.1) | Isolation suite on every endpoint, external pen test and fixes, backup restore drill, app server recovery and rebuild test, CA review of invoices, counsel review of terms and policies |
 | 17–18 | **First 3–5 real tenants on production** | none | Owners sign up themselves, draw seat maps, take real bookings; the team fixes what they hit within a day |
 | 19–20 | **Launch: 10 tenants live** | none | Launch checklist (12 §4.2) |
+
+**v0.5 additions are not in this plan yet (2026-11-11).** Five changes were added to the pack after this plan was written (00 §C15 to C19): floors, the uploaded floor plan and seat-type prices; renewals and ending alerts; the amenity list; check-in by code inside a window; and SSPL offer codes. Their stories are US-4.10, US-4.11, US-4.12, US-6.5, US-8.5, US-8.6, US-8.7 and US-10.9. They have not been estimated or given a sprint, so the week-20 target above predates them (13 R35, OQ42). Decided 2026-11-11: Cowos launches only when all the features are complete, so these are launch scope and the launch week moves out by however long they take; this plan needs re-estimating before a new date is quoted. The natural homes are weeks 8–9 for the layout work, week 10 for check-in and amenities, weeks 11–12 for offer codes, and a new slice for renewals. The offer codes must work before weeks 17–18, when the first 3 to 5 tenants go live.
 
 ## 5. Things outside the code that set the date
 

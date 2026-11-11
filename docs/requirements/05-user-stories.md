@@ -1,6 +1,6 @@
 # 05 · User Stories with Acceptance Criteria
 
-> Cowos requirements pack · v0.4 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. Stories without a phase mark are P1.
+> Cowos requirements pack · v0.5 draft · Story IDs `US-<epic>.<n>`; each story lists the FRs it covers. Stories without a phase mark are P1.
 
 ## Epic index
 
@@ -148,6 +148,23 @@ As a tenant owner, I want bookings I sold before drawing the map to get real sea
 - **Given** 14 bookings for 12 Nov and a map with 12 desks, **when** I publish, **then** publishing is blocked with "12 Nov: 14 bookings, 12 seats" and nothing changes.
 - **Given** a customer is booking seat B2 while I publish a map that removes B2, **when** both finish, **then** either my publish is blocked because B2 is booked, or the customer sees "B2 was just booked · pick another seat"; nobody ends up on a removed seat.
 
+**US-4.10 Upload my floor plan and trace over it** (FR-TA-068g, FR-TA-068h, FR-TA-068k) · Added v0.5
+As an owner, I want to upload each floor's plan and paint my seats over it so that the map matches my real space.
+- **Given** my Madhapur location has 3 floors, **when** I set the floor count to 3 and upload a plan for the ground floor, **then** the plan shows behind the grid and I can set the cell size and line the plan up before painting.
+- **Given** my ground floor is L-shaped, **when** I paint only the cells inside the plan's outline and publish, **then** the booking app shows an L-shaped map.
+- **Given** I rearranged the 1st floor, **when** I replace its plan picture and edit the draft, **then** the live map is unchanged until I publish, and a seat with future bookings can't be removed until I move them.
+
+**US-4.11 Price my seats by type** (FR-TA-068i, FR-TA-068j) · Added v0.5
+As an owner, I want open desks, partition desks and cubicles to have different prices so that I charge what each seat is worth.
+- **Given** I created the seat types Open desk, Partition desk (2 sides) and Cubicle, **when** I select seats A1–A6 and choose Cubicle, **then** those cells draw with three thick edges.
+- **Given** the day pass sells by day and month, **when** I enter ₹400, ₹500 and ₹650 per day for the three types, **then** the product page shows "from ₹400/day" and each seat shows its own price.
+- **Given** I raise the Cubicle day price to ₹700, **when** a customer who already paid ₹650 opens their booking, **then** their price is still ₹650.
+
+**US-4.12 List my amenities** (FR-TA-072, FR-BA-047) · Added v0.5
+As an owner, I want to choose which amenities my space shows so that customers know what they get.
+- **Given** the starter list, **when** I switch on Wi-Fi, pantry, coffee, fridge and oven and add "Terrace seating", **then** the booking app shows those six with icons and labels within a minute.
+- **Given** I mark Parking as paid with the note "₹50/day", **when** a customer opens the amenities, **then** Parking shows "Paid · ₹50/day".
+
 **US-4.8 See today on the map** (FR-TA-068e) · After launch (CEO review 3, R3-C4)
 As front desk staff, I want to see who sits where today so that I can greet people and fix mix-ups quickly.
 - **Given** 12 seats are booked today and 5 guests have checked in, **when** I open Today on the map, **then** the 5 seats show checked in, 7 show booked, the rest free, and tapping a seat shows the customer's name.
@@ -210,6 +227,11 @@ As a freelancer, I want to choose a window seat when I book a day pass so that I
 - **Given** I use a screen reader, **when** I switch to List view, **then** I can pick the same free seats grouped by row, each read as "A1, window, free".
 - **Given** my booking is confirmed, **when** I open the confirmation and desk pass, **then** both show seat A1.
 
+**US-6.5 Choose a floor and a seat type** (FR-BA-013a) · Added v0.5
+As a customer, I want to see each floor and what each kind of seat costs so that I pick the seat that suits me.
+- **Given** the space has two published floors, **when** I open "Choose your seat", **then** I see a tab per floor with its free-seat count and can switch between them.
+- **Given** the legend shows "Open desk ₹400 · Cubicle ₹650", **when** I pick cubicle E3 on the 1st floor, **then** the total shows ₹650 plus GST and my confirmation says "1st floor · E3 · Cubicle".
+
 ---
 
 ## E7 · Requests, enquiries and tours
@@ -250,6 +272,24 @@ As a tenant owner, I want to give a full refund outside the policy so that I can
 **US-8.4 Reschedule** (FR-BA-032, FR-TA-095)
 As a customer, I want to move my meeting from Tuesday to Wednesday so that I don't lose my money.
 - **Given** I'm before the free-cancellation cutoff and Wednesday 10–12 is free, **when** I reschedule, **then** the booking moves, no extra payment is required for the same price, and both of us get updated notifications with a new `.ics`.
+
+**US-8.5 Renew my booking** (FR-BA-038, FR-TA-095a) · Added v0.5
+As a customer, I want to renew before my booking ends so that I keep my seat.
+- **Given** my month in Cabin 2 ends on 30 Nov and Cabin 2 is free in December, **when** I tap Renew and pay, **then** I have a new booking for Cabin 2 from 1 Dec with its own invoice.
+- **Given** Cabin 2 is already booked for December, **when** I tap Renew, **then** I'm told Cabin 2 isn't free and offered the other free cabins.
+- **Given** my meeting room ends at 12:00 and 12:00–13:00 is free, **when** I tap Extend by 1 hour and pay, **then** my booking runs to 13:00.
+
+**US-8.6 Be told my booking is ending** (FR-BA-039, FR-TA-084) · Added v0.5
+As a customer, I want a reminder before my booking ends so that I don't lose my place by accident.
+- **Given** the tenant's monthly alerts are at 7 and 2 days, **when** my monthly booking is 7 days from its end and not renewed, **then** I get "Your cabin booking ends on 30 Nov. Renew to keep Cabin 2." with a Renew link.
+- **Given** I already renewed, **when** the 2-day alert time comes, **then** nothing is sent.
+- **Given** my hourly booking ends in 15 minutes and the next slot is taken, **when** the alert time comes, **then** no "extend" alert is sent.
+
+**US-8.7 Validate a booking inside the check-in window** (FR-TA-083, FR-TA-096a, FR-BA-046) · Added v0.5
+As front desk staff, I want to validate a customer by QR or code only close to their booking time so that people can't use a booking early.
+- **Given** check-in opens 10 minutes before the start and a booking starts at 10:00, **when** I scan the pass at 9:40, **then** I see "Check-in opens at 9:50" and the customer is not checked in.
+- **Given** it is 9:55 and my camera doesn't work, **when** I type the customer's 6-digit code, **then** I see their name, seat and time and they are checked in.
+- **Given** a customer arrives 30 minutes early and I'm a Manager, **when** I check them in with the reason "arrived early", **then** they are checked in and the override is in the audit log.
 
 ---
 
@@ -352,6 +392,12 @@ As SSPL, I want to set slab prices per meter in one place so that tenant bills, 
 - **Given** a slab table with a gap or an overlap, or more than one open-ended slab, **when** I publish, **then** it is rejected with the meter and the slab named.
 - **Given** slab 1 for email is 1–1,000 at ₹0, **when** I publish, **then** it is accepted as a free allowance.
 - **Given** a version already in force, **when** I try to change a price in it, **then** I can't; I create a new version from a later 1st.
+
+**US-10.9 Give an early tenant a free period** (FR-SA-059, FR-TA-183) · Added v0.5
+As SSPL, I want to give the first few tenants a code that makes Cowos free for some months so that they join early.
+- **Given** I created the code LAUNCH5 for 100% off, 6 months and 5 tenants, **when** an Owner enters it on the Billing page, **then** the page shows "100% off the plan fee and server usage for 6 months" and that month's server invoice is ₹0 with a discount line.
+- **Given** 5 tenants have redeemed LAUNCH5, **when** a sixth enters it, **then** it is refused with "This code has been fully used".
+- **Given** a tenant's free period ends in 30 days, **when** the day comes, **then** the Owner is told the end date and the estimated first full invoice.
 
 **US-10.8 Compare cost with billed revenue** (FR-SA-022, FR-PL-069) · Launch + about 4 weeks (CEO review 3, R3-C2)
 As SSPL, I want actual AWS and messaging-provider cost next to billed revenue each month so that I can set slab prices.

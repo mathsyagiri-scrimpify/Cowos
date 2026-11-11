@@ -1,6 +1,6 @@
 # 06 · Key User Flows
 
-> Cowos requirements pack · v0.4 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
+> Cowos requirements pack · v0.5 draft · Diagrams are Mermaid (render on GitHub and in most Markdown viewers).
 
 ## Flow 1 · Owner sign-up → wizard → preview → publish
 

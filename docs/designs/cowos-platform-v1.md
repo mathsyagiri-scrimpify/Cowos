@@ -139,6 +139,8 @@ Owners told SSPL that describing their own space is the hardest part of setting 
 
 **Not in this version:** a floor-plan photo behind the grid, free-form rotation of desks, and showing the map on the public website.
 
+**Requested change, 2026-11-11 (pack v0.5, not reviewed):** the tenant sets the number of floors and uploads a plan per floor to trace over in the builder, defines seat types (open, partition, cubicle) with their own prices, and customers see a tab per floor with prices in the legend. This reverses "a floor-plan photo behind the grid" above. The requirements are in the pack (00 §C15; 04 FR-TA-068g to 068l, FR-BA-013a). This design doc has not been revised or re-reviewed for it.
+
 ## Open Questions
 
 1. Which city is the beachhead? Hyderabad was suggested, not confirmed.

@@ -1,6 +1,6 @@
 # 09 · Data Model
 
-> Cowos requirements pack · v0.4 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
+> Cowos requirements pack · v0.5 draft · Logical model for PostgreSQL. All tenant-owned tables carry `tenant_id` (RLS-enforced). IDs are UUIDv7. Timestamps `timestamptz` in UTC. Money as `numeric(12,2)` in INR with `currency char(3)` for future markets.
 
 ## 1. Entity overview by module
 
@@ -175,6 +175,13 @@ Tenant state transitions (TrialEnded added by the eng re-review, D2: day 15 with
 **ProductUnit** (Resource): id, tenant_id, product_id, label ("Cabin 3", "D-12", "A3"), capacity, floor, zone, kind (Seat, Room), status (Active, Maintenance, Retired), out_of_service_reason, tags (text[]: window, power, monitor, standing, custom). Placement on a seat map: seat_map_id null, grid_row, grid_col, grid_row_span, grid_col_span (1 × 1 for a seat). The v0.3 floor_plan_x/y (P2) fields are removed. Seat labels are unique per location, checked on map publish (FR-TA-068a).
 
 **SeatMap** (Pricing Rule #13, FR-TA-068): id, tenant_id, location_id, name ("Ground floor · Main hall"), rows (≤ 40), cols (≤ 60), sort_order, draft_layout (jsonb), live_layout (jsonb null), live_version (int, 0 before the first publish), published_at, published_by, template_key null, archived_at. Layout jsonb holds the non-unit cells as `{row, col, kind: Aisle|Wall|Entrance|Label, text}` and, in the draft only, the planned seat and block placements; live seats and blocks are read from ProductUnit placement, so a booking never points at a cell. At most 10 active maps per location (FR-TA-068d). One table instead of SeatMap + SeatMapVersion (eng review 5, D1).
+
+**Added in v0.5 (00 §C15–C19; proposed, not through the eng review):**
+- **Floor**: id, tenant_id, location_id, name ("Ground floor"), sort_order, plan_media_id null (the uploaded plan), plan_crop and plan_rotation, archived_at. SeatMap gains floor_id, and plan_transform (jsonb: cell size, offset, scale, opacity) for lining the plan up with the grid (FR-TA-068g, FR-TA-068h).
+- **SeatType**: id, tenant_id, location_id, name, colour, shape (None, OneSide, TwoSides, Cubicle), description, photo_media_id null, is_default, sort_order, archived_at. ProductUnit gains seat_type_id (seats only). PriceRule gains applies_to_seat_type_id null, next to applies_to_unit_id; price lookup order is unit, then seat type, then product (FR-TA-068i, FR-TA-068j).
+- **Amenity**: id, tenant_id, location_id, name, icon_key, note, is_paid, is_enabled, sort_order, starter_key null (set for entries from the Cowos starter list). LocationAmenity and a product-to-amenity link hold where each applies (FR-TA-072).
+- **Booking** gains renewed_from_booking_id null, check_in_code (6 digits, unique per location and day), checked_in_at and check_in_override_reason null. Location gains check_in_opens_minutes (default 10). Product gains renewals_enabled and renewal_alert_timings (jsonb per duration) (FR-BA-038, FR-BA-046, FR-TA-083, FR-TA-084).
+- **PlatformOfferCode**: id, code, discount_pct, covers (PlanFee, ServerUsage, Notifications), months, max_redemptions, redeem_by, status. **PlatformOfferRedemption**: code_id, tenant_id, redeemed_at, starts_on, ends_on, attached_by null, removed_at, removed_reason. Not tenant-owned tables (FR-SA-059, FR-TA-183).
 
 **SeatMapVersion**: Not used (eng review 5, D1). Publishing copies draft_layout to live_layout, increments live_version, copies unit placements to ProductUnit, checks the publish rules (FR-TA-068c) and bumps `tenant.data_seq` (R18), all in one transaction. Each publish writes an AuditEvent holding the replaced live_layout, which is the map's history.
 

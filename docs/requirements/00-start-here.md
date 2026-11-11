@@ -1,6 +1,6 @@
 # 00 · Start Here: Questions, Assumptions, and What I'd Change
 
-> Cowos requirements pack · Version 0.4 (draft) · Owner: SSPL Product · Date: 2026-11-04
+> Cowos requirements pack · Version 0.5 (draft) · Owner: SSPL Product · Date: 2026-11-11
 
 This pack has 13 deliverables (files `01` to `13`). Read this file first. It holds five things:
 
@@ -13,6 +13,8 @@ This pack has 13 deliverables (files `01` to `13`). Read this file first. It hol
 v0.3 applies the product owner's revision of 2026-11-04 to the approved design doc `docs/designs/cowos-platform-v1.md`: metered slab pricing (Pricing and Billing Rules #1–#11), one app server for hosting (Rule #11), and no pilot programme. Design decisions 1A–33A and the engineering and CEO review decisions that the revision does not replace still stand.
 
 v0.4 applies revision 2 of the same day: two pricing plans, Fixed and Usage (Pricing Rule #12), and grid seat maps that owners build and customers pick seats from, at launch (Rule #13, change C13). It adds a build plan for a small team using Claude Code (14), with a launch target of week 20 [estimated]. Revision 2 has not yet been through the CEO, design or engineering reviews.
+
+v0.5 (2026-11-11) adds five requested changes, C15 to C19 in section 2: floors with an uploaded floor plan to trace over and prices by seat type; renewals and "booking ending" alerts; a tenant-managed amenity list; check-in by QR or code inside a configurable window; and SSPL offer codes that make Cowos free for the first 3 to 5 tenants. None of these has been reviewed, and none is scheduled in the build plan yet (14 §4, 13 OQ42). Decided 2026-11-11: Cowos launches only when all the features are complete, so all five are launch scope and the launch date follows the re-estimated build plan, not week 20.
 
 ---
 
@@ -250,6 +252,63 @@ Affects: 03 BRD §5, 04 SRS (FR-TA-068, FR-TA-068a–e, FR-TA-063, FR-TA-091, FR
 **Status:** recorded as a requirement to be introduced after launch, on a date not yet set (13 OQ37). It is not in the week-20 build plan (14) and has not been reviewed. Who pays for the AI usage (13 OQ38), the exact forms per app (OQ39) and the privacy questions (OQ40, OQ41) are open.
 
 Affects: 04 SRS §9 (FR-AI-001 to FR-AI-019), 05 stories (E14), 12 release plan §2, 13 (R32, R33, OQ37–OQ41).
+
+### C15. Layout: floors, an uploaded floor plan to trace over, and prices by seat type (added 2026-11-11, v0.5)
+
+**Request (2026-11-11):** every coworking space has its own layout and floors. The tenant gives the number of floors and uploads a layout plan per floor, the layout grid in the booking app and Tenant Admin comes from it, and the tenant sets prices for seats and rooms the way cinemas price seat categories.
+
+**What the pack now says:**
+- **Floors and plans.** The tenant sets the number of floors per location, names each one and uploads one plan per floor (FR-TA-068g). A floor with no plan still starts from a template.
+- **Trace over the plan.** The plan shows behind the grid in the builder. The tenant sizes the grid so one cell covers one desk, lines the plan up and paints desks, cabins and rooms over it (FR-TA-068h). The bookable map is still the grid (C13); the plan is a guide. Customers see the drawn map with the floor's real outline, not the uploaded picture.
+- **Seat types.** The tenant defines seat types such as Open desk, Partition desk and Cubicle, each with a shape (no partition, 1 side, 2 sides, cubicle) that draws on the seat's cell (FR-TA-068i).
+- **Prices.** Cinemas price a category of seats, not each seat. Cowos does the same: a price per seat type for each duration, and a price per cabin or meeting-room unit (FR-TA-068j). The booking app shows the prices in the legend and a tab per floor (FR-BA-013a).
+- **Editing later.** The tenant can edit the map or replace the plan picture at any time; the live map changes only on publish, and seats with future bookings are protected as before (FR-TA-068k).
+- **Automatic suggestion.** Cowos proposing seats from the picture is recorded but not scheduled, because its accuracy on real plans is untested (FR-TA-068l, 13 OQ43).
+
+This replaces two earlier positions: the design doc's "not in this version: a floor-plan photo behind the grid", and the Phase 3 row "floor photo behind the seat map grid".
+
+Affects: 04 SRS (FR-TA-068g to FR-TA-068l, FR-BA-013a), 05 stories (US-4.10, US-4.11, US-6.5), 09 data model, 12 release plan §2, 13 (R34, OQ43–OQ45), design doc "Seat maps".
+
+### C16. Renewals and "booking ending" alerts (added 2026-11-11, v0.5)
+
+**Request (2026-11-11):** add renewal, cancellation and reschedule to the booking app. A customer who booked a cabin for a month should be told the booking is ending on a date and asked to renew, and the same for hourly and daily bookings.
+
+**What the pack now says:** cancellation and reschedule were already in the pack at launch (FR-BA-031, FR-BA-032, FR-TA-080, FR-TA-094, FR-TA-095) and are unchanged. New in v0.5:
+- **Ending alerts** for every duration, on timings the tenant can change (defaults: monthly 7 and 2 days before the end, weekly 2 days, daily 3 hours, hourly 15 minutes) (FR-BA-039, FR-TA-084).
+- **Renew or extend** from the alert or the booking detail: the same seat or unit when it is free, at the current price, paid through the normal checkout (FR-BA-038). Staff can do the same for a customer (FR-TA-095a).
+
+Not the same as memberships (Phase 2, FR-TA-151 to FR-TA-154), which bill a plan automatically each cycle. A renewal here is a new booking the customer chooses to make.
+
+Affects: 04 SRS (FR-BA-038, FR-BA-039, FR-TA-084, FR-TA-095a), 05 stories (US-8.5, US-8.6), 09 data model, 13 (OQ46).
+
+### C17. Amenities the tenant configures (added 2026-11-11, v0.5)
+
+**Request (2026-11-11):** show features such as pantry, Wi-Fi, fridge, coffee and oven in the booking app; the tenant configures them in the Tenant Admin.
+
+**What the pack now says:** the pack already had amenities on locations and products (FR-TA-060, FR-TA-061) and on the product page (FR-BA-011), but no screen to manage the list. v0.5 adds an amenity list per location with a starter set and the tenant's own entries (FR-TA-072), and shows it on the booking app home and product pages (FR-BA-047).
+
+Affects: 04 SRS (FR-TA-072, FR-BA-047), 05 stories (US-4.12), 09 data model.
+
+### C18. Validating a booking at the desk: QR or code, inside a check-in window (added 2026-11-11, v0.5)
+
+**Request (2026-11-11):** the customer has a QR and an OTP in the booking app, and the tenant validates it in the Tenant Admin. The customer can validate only 5 or 10 minutes before the booking time; the time is configurable in the Tenant Admin.
+
+**What the pack now says:** QR check-in was already in the pack (FR-TA-096, FR-BA-037). New in v0.5:
+- **A 6-digit check-in code** on the pass, typed by staff when scanning isn't possible (FR-BA-046, FR-TA-096a).
+- **A check-in window** the tenant sets per location: check-in opens N minutes before the start (default 10). Earlier attempts are refused with the time it opens (FR-TA-083).
+- **A manual override** for an Owner or Manager, with a reason, for customers who arrive early (FR-TA-096a).
+
+Affects: 04 SRS (FR-TA-083, FR-TA-096a, FR-BA-046), 05 stories (US-8.7), 09 data model, 13 (R36, OQ47).
+
+### C19. Launch offer: Cowos gives the first 3 to 5 tenants a free period through offer codes (added 2026-11-11, v0.5)
+
+**Request (2026-11-11):** for the first three or five tenants Cowos is free; Cowos gives them promo codes.
+
+**What the pack now says:** SSPL creates offer codes in the Super Admin (discount %, months, number of tenants, last date to redeem) and a tenant enters one at sign-up or on the Billing page (FR-SA-059, FR-TA-183). A 100% code makes the server invoices ₹0 for the covered months. These tenants use the same sign-up, plans and tenant states as everyone else, so the pilot machinery removed in v0.3 does not come back.
+
+This changes the v0.3 statement "no free pilot programme": there is still no separate pilot programme, but SSPL can now waive its charges for chosen tenants with a code. It does not change "0% commission" (C1) or the tenant's own promo codes for its customers (FR-TA-150). The free duration is set on each code (decided 2026-11-11). The number of tenants and whether messages are covered are not decided (13 OQ48).
+
+Affects: 04 SRS (FR-SA-059, FR-TA-183), 05 stories (US-10.9), 09 data model, 13 (OQ48), 14 build plan weeks 17–18.
 
 ---
 
